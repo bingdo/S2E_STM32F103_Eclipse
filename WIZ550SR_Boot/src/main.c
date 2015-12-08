@@ -113,7 +113,6 @@ int main(int argc, char* argv[])
 
 	BOOT_Pin_Init();
 
-	USART1_Configuration();
 	/* Initialize the I2C EEPROM driver ----------------------------------------*/
 #if defined(EEPROM_ENABLE)
 #if defined(I2CPERI_ENABLE)
@@ -129,6 +128,8 @@ int main(int argc, char* argv[])
 
 	/* Load Configure Information */
 	load_S2E_Packet_from_storage();
+
+	USART1_Configuration();
 
 	/* Check MAC Address */
 	check_mac_address();

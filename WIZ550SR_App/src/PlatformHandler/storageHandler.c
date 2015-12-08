@@ -62,7 +62,7 @@ int read_storage(uint8_t isConfig, void *data, uint16_t size)
 
 	memcpy(data, &Receive_Data[0], size);
 
-#if 1
+#if 0
     printf("[DB App R0x%.2X] ", EEPROM_ADDRESS);
 	for(i=0; i<162; i++)
 		printf("0x%.2X ",Receive_Data[i]);
@@ -152,7 +152,7 @@ int write_storage(uint8_t isConfig, void *data, uint16_t size)
 	/* Write on I2C EEPROM from EEPROM_WriteAddress1 */
 	I2C_EE_BufferWrite(&Transmit_Data[0], addr, size);
 
-#if 1
+#if 0
 	int j;
 	printf("\r\n");
     printf("[DB App W0x%.2X] ", EEPROM_ADDRESS);

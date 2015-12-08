@@ -463,6 +463,7 @@ void do_udp_config(uint8_t sock)
 
 			if(wiznet_header.stx != STX)
 				break;
+
 			if(wiznet_header.op_code[1] != WIZNET_REQUEST)
 				break;
 

@@ -920,7 +920,7 @@ static void hdl_mrst(void)
 {
 	if(atci.tcmd.sign == CMD_SIGN_NONE) {
 		cmd_resp(RET_OK, VAL_NONE);
-		while(RingBuffer_GetCount(&txring1) != 0);
+		while(RingBuffer_GetCount(&txring) != 0);
 		NVIC_SystemReset();
 	} else RESP_CR(RET_WRONG_SIGN);
 }
