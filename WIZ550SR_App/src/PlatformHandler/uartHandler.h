@@ -17,8 +17,8 @@
 #include "ConfigData.h"
 
 #define UART_DEBUG USART1
-#define UART_DATA USART2
-#define USART2_ENABLE	1
+#define UART_DATA USART1
+#define USART2_ENABLE	0
 
 #define USART1_TX		GPIO_Pin_9	// out
 #define USART1_RX		GPIO_Pin_10	// in
@@ -32,6 +32,12 @@
 
 #define UART_SRB_SIZE 1024	/* Send */
 #define UART_RRB_SIZE 1024	/* Receive */
+
+//#define RS485_ENABLE
+#if defined(RS485_ENABLE)
+#define RS485_TX_ENABLE()   GPIO_SetBits(GPIOA, USART2_RTS)
+#define RS485_TX_DISABLE()  GPIO_ResetBits(GPIOA, USART2_RTS)
+#endif
 
 extern uint32_t baud_table[11];
 extern RINGBUFF_T txring, rxring;
