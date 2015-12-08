@@ -871,7 +871,7 @@ void act_uart_a(struct __serial_info *serial)
 	USART_InitTypeDef USART_InitStructure;
 
 	cmd_resp(RET_OK, VAL_NONE);
-	while(RingBuffer_GetCount(&txring1) != 0);
+	while(RingBuffer_GetCount(&txring) != 0);
 	delay_cnt(999999);
 	serial_info_init(&USART_InitStructure, serial);
 }
@@ -884,8 +884,8 @@ void act_mdata(void)
 
 	disconnect(SOCK_DATA);
 
-	UART_buffer_flush(&rxring1);
-	UART_buffer_flush(&txring1);
+	UART_buffer_flush(&rxring);
+	UART_buffer_flush(&txring);
 	op_mode = OP_DATA;
 
 	sock_put(SOCK_DATA);

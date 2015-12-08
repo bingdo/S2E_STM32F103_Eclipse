@@ -426,10 +426,10 @@ static void recv_tftp_data(uint8_t *msg, uint32_t msg_len)
 			}
 			send_tftp_ack(data->block_num);
 
-			if((msg_len - 4) < TFTP_BLK_SIZE) {
-				init_tftp();
-				g_progress_state = TFTP_SUCCESS;
-			}
+			//if((msg_len - 4) < TFTP_BLK_SIZE) {
+			//	init_tftp();
+			//	g_progress_state = TFTP_SUCCESS;
+			//}
 
 			break;
 			
@@ -599,8 +599,7 @@ int TFTP_run(void)
 	if(g_resend_flag) {
 		if(tftp_time_cnt >= g_timeout) {
 			switch(get_tftp_state()) {
-			case STATE_WRQ:						// 미구현
-				break;
+			case STATE_WRQ:						// 미구??				break;
 
 			case STATE_RRQ:
 				send_tftp_rrq(g_filename, (uint8_t *)TRANS_BINARY, &default_tftp_opt, 1);
@@ -611,8 +610,7 @@ int TFTP_run(void)
 				send_tftp_ack(get_block_number());
 				break;
 
-			case STATE_ACK:						// 미구현
-				break;
+			case STATE_ACK:						// 미구??				break;
 
 			default:
 				break;

@@ -54,7 +54,7 @@ void TIM2_IRQHandler(void)
 
         /* UART Packing Timer Process */
         if(!nagle_flag && net->packing_time) {
-            count = RingBuffer_GetCount(&rxring1);
+            count = RingBuffer_GetCount(&rxring);
 
             if(count != 0 && count == uart_recv_count)
                 nagle_time++;

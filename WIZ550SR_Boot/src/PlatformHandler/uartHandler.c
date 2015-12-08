@@ -15,6 +15,7 @@
 #include <errno.h>
 #include "stm32f10x.h"
 #include "uartHandler.h"
+#include "ConfigData.h"
 
 #ifdef __GNUC__
   /* With GCC/RAISONANCE, small printf (option LD Linker->Libraries->Small printf
@@ -34,10 +35,10 @@
 PUTCHAR_PROTOTYPE
 {
     /* Write a character to the USART */
-    USART_SendData(USART1, (u8) ch);
+    USART_SendData(UART_DEBUG, (u8) ch);
 
     /* Loop until the end of transmission */
-    while(USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET){}
+    while(USART_GetFlagStatus(UART_DEBUG, USART_FLAG_TXE) == RESET){}
 
     return ch;
 }
@@ -61,7 +62,7 @@ ssize_t _write (int fd __attribute__((unused)), const char* buf __attribute__((u
     return nbyte;
 }
 
-RINGBUFF_T txring1, rxring1;
+RINGBUFF_T txring, rxring;
 static uint8_t rxbuff[UART_RRB_SIZE], txbuff[UART_SRB_SIZE];
 
 uint32_t baud_table[11] = {
@@ -78,28 +79,6 @@ uint32_t baud_table[11] = {
 	230400
 };
 
-#if 0
-uint32_t Chip_UART_SendRB(USART_TypeDef *pUART, RINGBUFF_T *pRB, const void *data, int bytes)
-{
-	uint32_t ret;
-	uint8_t *p8 = (uint8_t *) data;
-
-	/* Don't let UART transmit ring buffer change in the UART IRQ handler */
-	Chip_UART_IntDisable(pUART, UART_IER_THREINT);
-
-	/* Move as much data as possible into transmit ring buffer */
-	ret = RingBuffer_InsertMult(pRB, p8, bytes);
-	Chip_UART_TXIntHandlerRB(pUART, pRB);
-
-	/* Add additional data to transmit ring buffer if possible */
-	ret += RingBuffer_InsertMult(pRB, (p8 + ret), (bytes - ret));
-
-	/* Enable UART transmit interrupt */
-	Chip_UART_IntEnable(pUART, UART_IER_THREINT);
-
-	return ret;
-}
-#else
 uint32_t Chip_UART_SendRB(USART_TypeDef *pUART, RINGBUFF_T *pRB, const void *data, int bytes)
 {
 	uint32_t ret;
@@ -116,23 +95,7 @@ uint32_t Chip_UART_SendRB(USART_TypeDef *pUART, RINGBUFF_T *pRB, const void *dat
 
 	return ret;
 }
-#endif
 
-#if 0
-int Chip_UART_ReadRB(USART_TypeDef *pUART, RINGBUFF_T *pRB, void *data, int bytes)
-{
-	(void) pUART;
-	int ret, is_full;
-
-	is_full = RingBuffer_IsFull(pRB);
-	ret = RingBuffer_PopMult(pRB, (uint8_t *) data, bytes);
-
-	if(is_full)
-		Chip_UART_IntEnable(LPC_USART, (UART_IER_RBRINT | UART_IER_RLSINT));
-
-	return ret;
-}
-#else
 int Chip_UART_ReadRB(USART_TypeDef *pUART, RINGBUFF_T *pRB, void *data, int bytes)
 {
 	(void) pUART;
@@ -146,7 +109,6 @@ int Chip_UART_ReadRB(USART_TypeDef *pUART, RINGBUFF_T *pRB, void *data, int byte
 
 	return ret;
 }
-#endif
 
 int Chip_UART_ReadRB_BLK(USART_TypeDef *pUART, RINGBUFF_T *pRB, void *data, int bytes)
 {
@@ -199,7 +161,9 @@ void Chip_UART_IRQRBHandler(USART_TypeDef *pUART, RINGBUFF_T *pRXRB, RINGBUFF_T 
  */
 void USART1_IRQHandler(void)
 {
-	Chip_UART_IRQRBHandler(USART1, &rxring1, &txring1);
+#if (USART2_ENABLE == 0)
+	Chip_UART_IRQRBHandler(USART1, &rxring, &txring);
+#endif
 }
 
 /**
@@ -209,15 +173,21 @@ void USART1_IRQHandler(void)
  */
 void USART1_Configuration(void)
 {
+#if (USART2_ENABLE == 1)
 	USART_InitTypeDef USART_InitStructure;
+#endif
 	USART_ClockInitTypeDef USART_ClockInitStruct;
 
 	GPIO_InitTypeDef GPIO_InitStructure;
 	NVIC_InitTypeDef NVIC_InitStructure;
 
+#if (USART2_ENABLE == 0)
+	S2E_Packet *value = get_S2E_Packet_pointer();
+
 	/* Ring Buffer */
-	RingBuffer_Init(&rxring1, rxbuff, 1, UART_RRB_SIZE);
-	RingBuffer_Init(&txring1, txbuff, 1, UART_SRB_SIZE);
+	RingBuffer_Init(&rxring, rxbuff, 1, UART_RRB_SIZE);
+	RingBuffer_Init(&txring, txbuff, 1, UART_SRB_SIZE);
+#endif
 
 	/* Enable the USART Interrupt */
 	NVIC_InitStructure.NVIC_IRQChannel = USART1_IRQn;
@@ -227,14 +197,14 @@ void USART1_Configuration(void)
 	NVIC_Init(&NVIC_InitStructure);
 
 	/* Configure USART Tx as alternate function push-pull */
-	GPIO_InitStructure.GPIO_Pin =  USART1_TX | USART1_RTS;
+	GPIO_InitStructure.GPIO_Pin =  USART1_TX;// | USART1_RTS;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 
 	/* Configure USART Rx as input floating */
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
-	GPIO_InitStructure.GPIO_Pin = USART1_RX | USART1_CTS;
+	GPIO_InitStructure.GPIO_Pin = USART1_RX;// | USART1_CTS;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 
 	/* USARTx configuration ------------------------------------------------------*/
@@ -246,12 +216,15 @@ void USART1_Configuration(void)
 	   - Hardware flow control disabled (RTS and CTS signals)
 	   - Receive and transmit enabled
 	 */
+#if (USART2_ENABLE == 1)
 	USART_InitStructure.USART_BaudRate = 115200;
 	USART_InitStructure.USART_WordLength = USART_WordLength_8b;
 	USART_InitStructure.USART_StopBits = USART_StopBits_1;
 	USART_InitStructure.USART_Parity = USART_Parity_No ;
 	USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
 	USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
+	USART_Init(USART1, &USART_InitStructure);
+#endif
 
 	USART_ClockInitStruct.USART_Clock = USART_Clock_Disable;
 	USART_ClockInitStruct.USART_CPOL = USART_CPOL_Low;
@@ -259,7 +232,9 @@ void USART1_Configuration(void)
 	USART_ClockInitStruct.USART_LastBit = USART_LastBit_Disable;
 
 	/* Configure the USARTx */
-	USART_Init(USART1, &USART_InitStructure);
+#if (USART2_ENABLE == 0)
+	serial_info_init(USART1, &(value->serial_info[0])); // Load USART1 Settings from Flash
+#endif
 	USART_ClockInit(USART1, &USART_ClockInitStruct);
 
 	/* Enable USARTy Receive and Transmit interrupts */
@@ -269,19 +244,105 @@ void USART1_Configuration(void)
 	USART_Cmd(USART1, ENABLE);
 }
 
+void USART2_IRQHandler(void)
+{
+#if (USART2_ENABLE == 1)
+	Chip_UART_IRQRBHandler(USART2, &rxring, &txring);
+#endif
+}
+
+void USART2_Configuration(void)
+{
+#if (USART2_ENABLE == 0)
+	USART_InitTypeDef USART_InitStructure;
+#endif
+	USART_ClockInitTypeDef USART_ClockInitStruct;
+
+	GPIO_InitTypeDef GPIO_InitStructure;
+	NVIC_InitTypeDef NVIC_InitStructure;
+
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE);
+
+#if (USART2_ENABLE == 1)
+	S2E_Packet *value = get_S2E_Packet_pointer();
+
+	/* Ring Buffer */
+	RingBuffer_Init(&rxring, rxbuff, 1, UART_RRB_SIZE);
+	RingBuffer_Init(&txring, txbuff, 1, UART_SRB_SIZE);
+#endif
+
+	/* Enable the USART Interrupt */
+	NVIC_InitStructure.NVIC_IRQChannel = USART2_IRQn;
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_Init(&NVIC_InitStructure);
+
+	/* Configure USART Tx as alternate function push-pull */
+	GPIO_InitStructure.GPIO_Pin =  USART2_TX | USART2_RTS;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_Init(GPIOA, &GPIO_InitStructure);
+
+	/* Configure USART Rx as input floating */
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+	GPIO_InitStructure.GPIO_Pin = USART2_RX | USART2_CTS;
+	GPIO_Init(GPIOA, &GPIO_InitStructure);
+
+	/* USARTx configuration ------------------------------------------------------*/
+	/* USARTx configured as follow:
+	   - BaudRate = 115200 baud
+	   - Word Length = 8 Bits
+	   - One Stop Bit
+	   - No parity
+	   - Hardware flow control disabled (RTS and CTS signals)
+	   - Receive and transmit enabled
+	 */
+#if (USART2_ENABLE == 0)
+	USART_InitStructure.USART_BaudRate = 115200;
+	USART_InitStructure.USART_WordLength = USART_WordLength_8b;
+	USART_InitStructure.USART_StopBits = USART_StopBits_1;
+	USART_InitStructure.USART_Parity = USART_Parity_No ;
+	USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+	USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
+	USART_Init(USART2, &USART_InitStructure);
+#endif
+	USART_ClockInitStruct.USART_Clock = USART_Clock_Disable;
+	USART_ClockInitStruct.USART_CPOL = USART_CPOL_Low;
+	USART_ClockInitStruct.USART_CPHA = USART_CPHA_2Edge;
+	USART_ClockInitStruct.USART_LastBit = USART_LastBit_Disable;
+
+	/* Configure the USARTx */
+#if (USART2_ENABLE == 1)
+	serial_info_init(USART2, &(value->serial_info[0])); // Load USART2 Settings from Flash
+#endif
+	USART_ClockInit(USART2, &USART_ClockInitStruct);
+
+	/* Enable USARTy Receive and Transmit interrupts */
+	USART_ITConfig(USART2, USART_IT_RXNE, ENABLE);
+
+	/* Enable the USARTx */
+	USART_Cmd(USART2, ENABLE);
+}
+
 int UART_read(void *data, int bytes)
 {
-	return Chip_UART_ReadRB(USART1 , &rxring1, data, bytes);
+	return Chip_UART_ReadRB(UART_DATA , &rxring, data, bytes);
 }
 
 uint32_t UART_write(void *data, int bytes)
 {
-	return Chip_UART_SendRB(USART1, &txring1, data, bytes);
+	return Chip_UART_SendRB(UART_DATA, &txring, data, bytes);
 }
 
 int UART_read_blk(void *data, int bytes)
 {
-	return Chip_UART_ReadRB_BLK(USART1 , &rxring1, data, bytes);
+	return Chip_UART_ReadRB_BLK(UART_DATA , &rxring, data, bytes);
+}
+
+void UART_buffer_flush(RINGBUFF_T *buf)
+{
+	RingBuffer_Flush(buf);
 }
 
 void myprintf(char *fmt, ...)
@@ -294,4 +355,84 @@ void myprintf(char *fmt, ...)
 	va_end(arg_ptr);
 
 	UART_write(etxt, strlen(etxt));
+}
+
+void serial_info_init(USART_TypeDef *pUART, struct __serial_info *serial)
+{
+	USART_InitTypeDef USART_InitStructure;
+
+	uint32_t i, loop, valid_arg = 0;
+
+	loop = sizeof(baud_table) / sizeof(baud_table[0]);
+	for(i = 0 ; i < loop ; i++) {
+		if(serial->baud_rate == baud_table[i]) {
+			USART_InitStructure.USART_BaudRate = serial->baud_rate;
+			valid_arg = 1;
+			break;
+		}
+	}
+	if(!valid_arg)
+		USART_InitStructure.USART_BaudRate = baud_115200;
+
+	/* Set Data Bits */
+	switch(serial->data_bits) {
+		case word_len8:
+			USART_InitStructure.USART_WordLength = USART_WordLength_8b;
+			break;
+		case word_len9:
+			USART_InitStructure.USART_WordLength = USART_WordLength_9b;
+			break;
+		default:
+			USART_InitStructure.USART_WordLength = USART_WordLength_8b;
+			serial->data_bits = word_len8;
+			break;
+	}
+
+	/* Set Stop Bits */
+	switch(serial->stop_bits) {
+		case stop_bit1:
+			USART_InitStructure.USART_StopBits = USART_StopBits_1;
+			break;
+		case stop_bit2:
+			USART_InitStructure.USART_StopBits = USART_StopBits_2;
+			break;
+		default:
+			USART_InitStructure.USART_StopBits = USART_StopBits_1;
+			serial->stop_bits = stop_bit1;
+			break;
+	}
+
+	/* Set Parity Bits */
+	switch(serial->parity) {
+		case parity_none:
+			USART_InitStructure.USART_Parity = USART_Parity_No;
+			break;
+		case parity_odd:
+			USART_InitStructure.USART_Parity = USART_Parity_Odd;
+			break;
+		case parity_even:
+			USART_InitStructure.USART_Parity = USART_Parity_Even;
+			break;
+		default:
+			USART_InitStructure.USART_Parity = USART_Parity_No;
+			serial->parity = parity_none;
+			break;
+	}
+
+	/* Flow Control */
+	switch(serial->parity) {
+	case flow_none:
+		USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+		break;
+	case flow_rts_cts:
+		USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_RTS_CTS;
+		break;
+	default:
+		USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+		break;
+	}
+
+	/* Configure the USARTx */
+	USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
+	USART_Init(pUART, &USART_InitStructure);
 }

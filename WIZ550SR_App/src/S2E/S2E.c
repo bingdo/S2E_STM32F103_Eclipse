@@ -117,7 +117,7 @@ static void ether_to_uart(uint8_t sock)
 			if(len > UART_SRB_SIZE)
 				len = UART_SRB_SIZE;
 
-			if((len > 0) && len <= RingBuffer_GetFree(&txring1)) {
+			if((len > 0) && len <= RingBuffer_GetFree(&txring)) {
 				len = recvfrom(sock, g_recv_buf, sizeof(g_recv_buf), dstip, &dstport);
 				if(len < 0) {
 					//printf("recvfrom error\r\n");
@@ -135,7 +135,7 @@ static void ether_to_uart(uint8_t sock)
 			if(len > UART_SRB_SIZE)
 				len = UART_SRB_SIZE;
 
-			if((len > 0) && len <= RingBuffer_GetFree(&txring1)) {
+			if((len > 0) && len <= RingBuffer_GetFree(&txring)) {
 				len = recv(sock, g_recv_buf, sizeof(g_recv_buf));
 				if(len < 0) {
 					//printf("recv error\r\n");
@@ -151,7 +151,7 @@ static void ether_to_uart(uint8_t sock)
 	}
 
 	if(len) {
-		Chip_UART_SendRB(USART1, &txring1, g_recv_buf, len);
+		Chip_UART_SendRB(UART_DATA, &txring, g_recv_buf, len);
 		uart_send_cnt += len;
 	}
 }
@@ -163,7 +163,7 @@ static void uart_to_ether(uint8_t sock)
 	uint16_t len = 0;
 	int ret, uart_read_len = sizeof(g_send_buf);
 
-	if(RingBuffer_IsEmpty(&rxring1))
+	if(RingBuffer_IsEmpty(&rxring))
 		return;
 
 	/* Serial Trigger Process */
@@ -174,7 +174,7 @@ static void uart_to_ether(uint8_t sock)
 	if(net->packing_size)
 		mask_bit |= 0x01;
 
-	if(RingBuffer_GetCount(&rxring1) < net->packing_size)
+	if(RingBuffer_GetCount(&rxring) < net->packing_size)
 		snd_flag |= 0x01;
 	else {
 		if(net->packing_size)
@@ -191,13 +191,13 @@ static void uart_to_ether(uint8_t sock)
 	/* Seperator Process */
 	if(net->packing_delimiter_length)  {
 		mask_bit |= 0x04;
-		if(!(ret = RingBuffer_SerachPattern(&rxring1, 0, net->packing_delimiter, net->packing_delimiter_length)))
+		if(!(ret = RingBuffer_SerachPattern(&rxring, 0, net->packing_delimiter, net->packing_delimiter_length)))
 			snd_flag |= 0x04;
 		else {
 			if(!(mask_bit & 0x01) || (snd_flag & 0x01) || (ret + net->packing_data_appendix < net->packing_size)) {
 				uart_read_len = ret + net->packing_data_appendix;
 
-				if(RingBuffer_GetCount(&rxring1) < uart_read_len)
+				if(RingBuffer_GetCount(&rxring) < uart_read_len)
 					snd_flag |= 0x04;
 			}
 		}
@@ -210,7 +210,7 @@ static void uart_to_ether(uint8_t sock)
 
 	/* Serial Trigger Process */
 	if(trigger_state == TRIG_STATE_READY)
-		if(ready_cnt != RingBuffer_GetCount(&rxring1))
+		if(ready_cnt != RingBuffer_GetCount(&rxring))
 			return;
 
 	getsockopt(sock, SO_STATUS, &sock_state);
@@ -219,7 +219,7 @@ static void uart_to_ether(uint8_t sock)
 		return;
 
 	/* Data Transfer */
-	len = Chip_UART_ReadRB(USART1, &rxring1, &g_send_buf, uart_read_len);
+	len = Chip_UART_ReadRB(UART_DATA, &rxring, &g_send_buf, uart_read_len);
 	if(len < 0) {
 		//printf("uart recv error\r\n");
 		return;
@@ -258,18 +258,18 @@ static void trigger_none_process(uint8_t sock_state)
 		printf("TRIG_STATE_READY\r\n");
 #endif
 		trigger_flag = 0;
-		uart_size_prev = RingBuffer_GetCount(&rxring1);
+		uart_size_prev = RingBuffer_GetCount(&rxring);
 		return;
 	}
 
-	if(uart_size_prev == RingBuffer_GetCount(&rxring1)) {			// UART ?�신 ?�이?��? ?�으�?
+	if(uart_size_prev == RingBuffer_GetCount(&rxring)) {			// UART ?�신 ?�이?��? ?�으�?
 		if(trigger_flag == 0)
 			trigger_flag = 1;
 	} else {
 		trigger_flag = trigger_time = 0;
-		uart_size_prev = RingBuffer_GetCount(&rxring1);
+		uart_size_prev = RingBuffer_GetCount(&rxring);
 		if((sock_state != SOCK_ESTABLISHED) && (sock_state != SOCK_UDP) && (net->working_mode != TCP_MIXED_MODE)) {
-			UART_buffer_flush(&rxring1);
+			UART_buffer_flush(&rxring);
 			uart_size_prev = 0;
 		}
 	}
@@ -279,7 +279,7 @@ static void trigger_ready_process()
 {
 	struct __options *option = (struct __options *)&(get_S2E_Packet_pointer()->options);
 
-	if((pattern_cnt = RingBuffer_SerachPattern(&rxring1, pattern_offset, option->serial_trigger, 1))) {
+	if((pattern_cnt = RingBuffer_SerachPattern(&rxring, pattern_offset, option->serial_trigger, 1))) {
 		pattern_offset = pattern_cnt;
 		trigger_state = TRIG_STATE_1;
 #ifdef __TRIG_DEBUG__
@@ -289,9 +289,9 @@ static void trigger_ready_process()
 		trigger_flag = 1;
 		return;
 	} else
-		ready_cnt = RingBuffer_GetCount(&rxring1);
+		ready_cnt = RingBuffer_GetCount(&rxring);
 		
-	if(uart_size_prev != RingBuffer_GetCount(&rxring1)) {
+	if(uart_size_prev != RingBuffer_GetCount(&rxring)) {
 		trigger_state = TRIG_STATE_NONE;
 #ifdef __TRIG_DEBUG__
 		printf("[%s] TRIG_STATE_NONE\r\n", __func__);
@@ -314,7 +314,7 @@ static void trigger_state1_process()
 		return;
 	}
 
-	if((len = RingBuffer_SerachPattern(&rxring1, pattern_offset - 1, option->serial_trigger, 2))) {
+	if((len = RingBuffer_SerachPattern(&rxring, pattern_offset - 1, option->serial_trigger, 2))) {
 		if((pattern_cnt + 1) == len) {
 			trigger_state = TRIG_STATE_2;
 #ifdef __TRIG_DEBUG__
@@ -326,7 +326,7 @@ static void trigger_state1_process()
 		}
 	}
 
-	if(pattern_cnt < RingBuffer_GetCount(&rxring1)) {
+	if(pattern_cnt < RingBuffer_GetCount(&rxring)) {
 		trigger_state = TRIG_STATE_NONE;
 #ifdef __TRIG_DEBUG__
 		printf("[%s] TRIG_STATE_NONE #2\r\n", __func__);
@@ -349,7 +349,7 @@ static void trigger_state2_process()
 		return;
 	}
 
-	if((len = RingBuffer_SerachPattern(&rxring1, pattern_offset - 2, option->serial_trigger, 3))) {
+	if((len = RingBuffer_SerachPattern(&rxring, pattern_offset - 2, option->serial_trigger, 3))) {
 		if((pattern_cnt + 1) == len) {
 			trigger_state = TRIG_STATE_3;
 #ifdef __TRIG_DEBUG__
@@ -357,12 +357,12 @@ static void trigger_state2_process()
 #endif
 			trigger_time = 0;
 			pattern_offset = pattern_cnt = len;
-			uart_size_prev = RingBuffer_GetCount(&rxring1);
+			uart_size_prev = RingBuffer_GetCount(&rxring);
 			return;
 		}
 	}
 
-	if(pattern_cnt < RingBuffer_GetCount(&rxring1)) {
+	if(pattern_cnt < RingBuffer_GetCount(&rxring)) {
 		trigger_state = TRIG_STATE_NONE;
 #ifdef __TRIG_DEBUG__
 		printf("[%s] TRIG_STATE_NONE #2\r\n", __func__);
@@ -382,18 +382,18 @@ static void trigger_state3_process(uint8_t sock)
 		pattern_offset = 0;
 
 		disconnect(sock);
-		UART_buffer_flush(&rxring1);
-		UART_buffer_flush(&txring1);
+		UART_buffer_flush(&rxring);
+		UART_buffer_flush(&txring);
 
-		Chip_UART_SendRB(USART1, &txring1, "\r\n\r\n\r\n[W,0]\r\n", 13);
-		Chip_UART_SendRB(USART1, &txring1, "[S,0]\r\n", 7);
+		Chip_UART_SendRB(UART_DATA, &txring, "\r\n\r\n\r\n[W,0]\r\n", 13);
+		Chip_UART_SendRB(UART_DATA, &txring, "[S,0]\r\n", 7);
 		op_mode = OP_COMMAND;
 
 		close(sock);
 		return;
 	}
 
-	if(pattern_cnt < RingBuffer_GetCount(&rxring1)) {
+	if(pattern_cnt < RingBuffer_GetCount(&rxring)) {
 		trigger_state = TRIG_STATE_NONE;
 #ifdef __TRIG_DEBUG__
 		printf("[%s] TRIG_STATE_NONE #2\r\n", __func__);
@@ -401,7 +401,7 @@ static void trigger_state3_process(uint8_t sock)
 		trigger_flag = trigger_time = uart_size_prev = 0;
 	}
 
-	if(uart_size_prev != RingBuffer_GetCount(&rxring1)) {
+	if(uart_size_prev != RingBuffer_GetCount(&rxring)) {
 		trigger_state = TRIG_STATE_NONE;
 #ifdef __TRIG_DEBUG__
 		printf("[%s] TRIG_STATE_NONE #3\r\n", __func__);
@@ -457,7 +457,7 @@ static void s2e_sockinit_process(uint8_t sock)
 			listen(sock);
 			break;
 		case TCP_MIXED_MODE:
-			if(RingBuffer_IsEmpty(&rxring1)) {
+			if(RingBuffer_IsEmpty(&rxring)) {
 				listen(sock);
 				mixed_state = MIXED_SERVER;
 			} else {
@@ -491,7 +491,7 @@ static void s2e_socklisten_process(uint8_t sock)
 			break;
 
 		case TCP_MIXED_MODE:
-			if(!RingBuffer_IsEmpty(&rxring1))
+			if(!RingBuffer_IsEmpty(&rxring))
 				close(sock);
 			break;
 		case UDP_MODE:

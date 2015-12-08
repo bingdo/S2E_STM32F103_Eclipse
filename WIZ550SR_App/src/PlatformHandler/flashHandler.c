@@ -95,7 +95,7 @@ void probe_flash(void)
 
     if(flash_kb >= 256)
     {
-    	printf("HIGH Density Flash memory\r\n");
+    	//printf("HIGH Density Flash memory\r\n");
 
     	flash.flash_page0_base = FLASH_PAGE0_BASE;
     	flash.flash_app_base = APP_BASE;
@@ -108,7 +108,7 @@ void probe_flash(void)
     }
     else
     {
-    	printf("Medium Density Flash memory\r\n");
+    	//printf("Medium Density Flash memory\r\n");
 
     	flash.flash_page0_base = FLASH_PAGE0_BASE;
     	flash.flash_app_base = APP_BASE;

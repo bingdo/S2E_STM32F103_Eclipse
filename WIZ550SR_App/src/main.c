@@ -71,7 +71,6 @@ int main(int argc, char* argv[])
 	//BOOT_Pin_Init();
 	Board_factory_Init();
 
-	USART1_Configuration();
 	/* Initialize the I2C EEPROM driver ----------------------------------------*/
 #if defined(EEPROM_ENABLE)
 #if defined(I2CPERI_ENABLE)
@@ -87,6 +86,9 @@ int main(int argc, char* argv[])
 
 	/* Load Configure Information */
 	load_S2E_Packet_from_storage();
+
+	USART1_Configuration();
+	USART2_Configuration();
 
 	W5500_SPI_Init();
 	W5500_Init();
@@ -142,7 +144,7 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	atc_init(&rxring1, &txring1);
+	atc_init(&rxring, &txring);
 
 	op_mode = OP_DATA;
 	while (1) {
