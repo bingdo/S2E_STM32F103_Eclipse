@@ -13,7 +13,6 @@
 #include <stdarg.h>
 #include <string.h>
 #include <errno.h>
-#include "stm32f10x.h"
 #include "uartHandler.h"
 #include "ConfigData.h"
 
@@ -138,9 +137,19 @@ void Chip_UART_IRQRBHandler(USART_TypeDef *pUART, RINGBUFF_T *pRXRB, RINGBUFF_T 
 	/* Handle transmit interrupt if enabled */
 	if(USART_GetITStatus(pUART, USART_IT_TXE) != RESET) {
 		if(RingBuffer_Pop(pTXRB, &ch))
-			USART_SendData(pUART, ch); 
+		{
+#if defined(RS485_ENABLE)
+			RS485_TX_ENABLE();
+#endif
+			USART_SendData(pUART, ch);
+		}
 		else												// RingBuffer Empty
+		{
 			USART_ITConfig(pUART, USART_IT_TXE, DISABLE);
+#if defined(RS485_ENABLE)
+			USART_ITConfig(pUART, USART_IT_TC, ENABLE);
+#endif
+		}
 	}
 
 	/* Handle receive interrupt */
@@ -152,6 +161,19 @@ void Chip_UART_IRQRBHandler(USART_TypeDef *pUART, RINGBUFF_T *pRXRB, RINGBUFF_T 
 			RingBuffer_Insert(pRXRB, &ch);
 		}
 	}
+
+#if defined(RS485_ENABLE)
+	// interrupt was for send (TC)
+	if(USART_GetITStatus(pUART, USART_IT_TC) != RESET)
+	{
+		// Disable TC Interrupt and TC pending bit clear
+	    USART_ITConfig(pUART, USART_IT_TC, DISABLE);
+	    USART_ClearFlag(pUART, USART_FLAG_TC);
+
+	    RS485_TX_DISABLE();
+	    USART_ITConfig(pUART, USART_IT_RXNE, ENABLE);
+	}
+#endif
 }
 
 /**
@@ -278,6 +300,23 @@ void USART2_Configuration(void)
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStructure);
 
+#if defined(RS485_ENABLE)
+	/* Configure USART Tx as alternate function push-pull */
+	GPIO_InitStructure.GPIO_Pin =  USART2_TX;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_Init(GPIOA, &GPIO_InitStructure);
+
+	GPIO_InitStructure.GPIO_Pin =  USART2_RTS;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_Init(GPIOA, &GPIO_InitStructure);
+
+	/* Configure USART Rx as input floating */
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+	GPIO_InitStructure.GPIO_Pin = USART2_RX;
+	GPIO_Init(GPIOA, &GPIO_InitStructure);
+#else
 	/* Configure USART Tx as alternate function push-pull */
 	GPIO_InitStructure.GPIO_Pin =  USART2_TX | USART2_RTS;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
@@ -288,6 +327,7 @@ void USART2_Configuration(void)
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
 	GPIO_InitStructure.GPIO_Pin = USART2_RX | USART2_CTS;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
+#endif
 
 	/* USARTx configuration ------------------------------------------------------*/
 	/* USARTx configured as follow:
