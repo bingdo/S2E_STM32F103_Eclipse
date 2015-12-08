@@ -237,7 +237,7 @@ void check_mac_address()
 
 		for(i = 0 ; i < 12 ; i++) {
 			UART_read_blk(buf + i, 1);
-			printf("%c", buf[i]);
+			//printf("%c", buf[i]);
 		}
 
 		for(i = 0, j = 0 ; i <= 6 ; i++, j += 2)
