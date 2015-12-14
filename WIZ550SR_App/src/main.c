@@ -73,9 +73,9 @@ int main(int argc, char* argv[])
 
 	/* Initialize the I2C EEPROM driver ----------------------------------------*/
 #if defined(EEPROM_ENABLE)
-#if defined(I2CPERI_ENABLE)
-	I2C_EE_Init();
-#else
+#if defined(EEPROM_ENABLE_BYI2CPERI)
+	I2C1Initialize();
+#elif defined(EEPROM_ENABLE_BYGPIO)
 	EE24AAXX_Init();
 #endif
 #endif
