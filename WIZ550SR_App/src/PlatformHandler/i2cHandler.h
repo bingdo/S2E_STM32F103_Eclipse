@@ -5,25 +5,22 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f10x.h"
 
-/* Exported types ------------------------------------------------------------*/
-/* Exported constants --------------------------------------------------------*/
-/* The M24C08W contains 4 blocks (128byte each) with the adresses below: E2 = 0 */
-/* EEPROM Addresses defines */
-#define EEPROM_Block0_ADDRESS 0xA0 /* E2 = 0 */
-#define EEPROM_Block1_ADDRESS 0xA2 /* E2 = 0 */
-//#define EEPROM_Block2_ADDRESS 0xA4 /* E2 = 0 */
-//#define EEPROM_Block3_ADDRESS 0xA6 /* E2 = 0 */
+#define EPP_I2C				I2C1
+#define EEP_Address			0xA0
+#define EEP_MacAddresss		0xFA
+#define EEP_I2C_RCC			RCC_APB1Periph_I2C1
+#define EEP_GPIO_RCC		RCC_APB2Periph_GPIOB
+#define EEP_PORT			GPIOB
+#define EEP_SCL_Pin			GPIO_Pin_6
+#define EEP_SDA_Pin			GPIO_Pin_7
 
-/* Exported macro ------------------------------------------------------------*/
-/* Exported functions ------------------------------------------------------- */
-void I2C_EE_Init(void);
-void I2C_EE_ByteWrite(u8* pBuffer, u8 WriteAddr);
-void I2C_EE_PageWrite(u8* pBuffer, u8 WriteAddr, u8 NumByteToWrite);
-void I2C_EE_BufferWrite(u8* pBuffer, u8 WriteAddr, u16 NumByteToWrite);
-void I2C_EE_BufferRead(u8* pBuffer, u8 ReadAddr, u16 NumByteToRead);
+extern u8 EEPROM_ADDRESS;
+void I2C1Initialize(void);
+void EEP_Read(uint8_t* pBuffer, uint16_t ReadAddr, uint16_t NumByteToRead);
+void EEP_Write(uint8_t* pBuffer, uint16_t WriteAddr, uint16_t NumByteToWrite);
 void I2C_EE_WaitEepromStandbyState(void);
 
-extern u16 EEPROM_ADDRESS;
+
 
 #define IIC1_SCL_PORT  	GPIOB
 #define IIC1_SCL_PIN  	GPIO_Pin_6
@@ -47,8 +44,5 @@ void IIC1_Ack(void);
 void IIC1_NAck(void);
 void IIC1_Send_Byte(u8 txd);
 u8 IIC1_Read_Byte(unsigned char ack);
-
-int I2C_Write(uint8_t block, uint8_t addr, uint8_t* data, uint8_t len);
-int I2C_Read(uint8_t block, uint8_t addr, uint8_t* data, uint32_t len);
 
 #endif

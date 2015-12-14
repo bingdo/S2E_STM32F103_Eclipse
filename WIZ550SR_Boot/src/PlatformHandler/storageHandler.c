@@ -39,72 +39,41 @@ int read_storage(uint8_t isConfig, void *data, uint16_t size)
 
 	return read_flash(address, data, size);
 #else
-
-#if defined(I2CPERI_ENABLE)
-	int i;
-	uint8_t addr;
 	uint8_t Receive_Data[EEPROM_BLOCK_SIZE];
+	uint16_t addr;
+	uint16_t offset;
 
 	if(size > EEPROM_BLOCK_SIZE)
 		size = EEPROM_BLOCK_SIZE;
 
+	addr = 0;
+
 	memset(&Receive_Data[0], 0x00, EEPROM_BLOCK_SIZE);
 
-	addr = 0x00;
-
 	if(isConfig == 0)
-		EEPROM_ADDRESS = EEPROM_Block0_ADDRESS;
+		offset = 0x00;
 	else
-		EEPROM_ADDRESS = EEPROM_Block1_ADDRESS;
+		offset = 0x00+EEPROM_BLOCK_SIZE;
 
-	/* Read from I2C EEPROM from EEPROM_ReadAddress1 */
-	I2C_EE_BufferRead(&Receive_Data[0], addr, size);
+#if defined(EEPROM_ENABLE_BYI2CPERI)
+	EEP_Read(&Receive_Data[0], addr+offset, size);
+#elif defined(EEPROM_ENABLE_BYGPIO)
+	EE24AAXX_Read(addr+offset, &Receive_Data[0], size);
+#endif
 
 	memcpy(data, &Receive_Data[0], size);
 
+	delay_ms(50);
+
 #if 0
-    printf("[DB Boot R0x%.2X] ", EEPROM_ADDRESS);
+	int i;
+    printf("[DB Boot R0x%.2X] ", addr+offset);
 	for(i=0; i<162; i++)
 		printf("0x%.2X ",Receive_Data[i]);
 	printf("\r\n");
 #endif
-	delay_ms(100);
-	delay_ms(100);
-	delay_ms(50);
 
 	return 0;
-#else
-	int ret=0, i;
-	uint8_t Receive_Data[EEPROM_BLOCK_SIZE];
-	uint16_t address;
-
-	if(size > EEPROM_BLOCK_SIZE)
-		size = EEPROM_BLOCK_SIZE;
-
-	memset(&Receive_Data[0], 0x00, EEPROM_BLOCK_SIZE);
-
-	if(isConfig == 0)
-		address = 0x00;
-	else
-		address = 0x00+EEPROM_BLOCK_SIZE;
-
-	EE24AAXX_Read(address, &Receive_Data[0], size);
-
-	memcpy(data, &Receive_Data[0], size);
-
-#if 0
-    printf("[DB Boot R0x%.2X] ", address);
-	for(i=0; i<162; i++)
-		printf("0x%.2X ",Receive_Data[i]);
-	printf("\r\n");
-#endif
-	delay_ms(100);
-	delay_ms(100);
-	delay_ms(50);
-
-	return ret;
-#endif
-
 #endif
 }
 
@@ -131,10 +100,10 @@ int write_storage(uint8_t isConfig, void *data, uint16_t size)
 	erase_flash_page(address);
 	return write_flash(address, data, size);
 #else
-
-#if defined(I2CPERI_ENABLE)
-	uint8_t addr;
 	uint8_t Transmit_Data[EEPROM_BLOCK_SIZE];
+	uint16_t addr;
+	uint16_t offset;
+	uint8_t page, rest, i;
 
 	memset(&Transmit_Data[0], 0x00, EEPROM_BLOCK_SIZE);
 	memcpy(&Transmit_Data[0], data, size);
@@ -142,61 +111,52 @@ int write_storage(uint8_t isConfig, void *data, uint16_t size)
 	if(size > EEPROM_BLOCK_SIZE)
 		size = EEPROM_BLOCK_SIZE;
 
-	addr = 0x00;
+	page = size/EEPROM_PAGE_SIZE;
+	rest = size%EEPROM_PAGE_SIZE;
+
+	addr = 0;
 
 	if(isConfig == 0)
-		EEPROM_ADDRESS = EEPROM_Block0_ADDRESS;
+		offset = 0x00;
 	else
-		EEPROM_ADDRESS = EEPROM_Block1_ADDRESS;
+		offset = 0x00+EEPROM_BLOCK_SIZE;
 
-	/* Write on I2C EEPROM from EEPROM_WriteAddress1 */
-	I2C_EE_BufferWrite(&Transmit_Data[0], addr, size);
-
-#if 0
-	int j;
-	printf("\r\n");
-    printf("[DB Boot W0x%.2X] ", EEPROM_ADDRESS);
-	for(j=0; j<162; j++)
-		printf("0x%.2X ",Transmit_Data[j]);
-	printf("\r\n");
+	if(size < EEPROM_PAGE_SIZE)
+	{
+#if defined(EEPROM_ENABLE_BYI2CPERI)
+		EEP_Write(&Transmit_Data[0], addr+offset, size);
+#elif defined(EEPROM_ENABLE_BYGPIO)
+		EE24AAXX_WritePage(addr+offset, &Transmit_Data[0], size);
 #endif
-	delay_ms(100);
-	delay_ms(100);
+		delay_ms(10);
+	}
+	else
+	{
+		for(i=0; i<page; i++)
+		{
+			addr = i*EEPROM_PAGE_SIZE;
+#if defined(EEPROM_ENABLE_BYI2CPERI)
+			EEP_Write(&Transmit_Data[addr], addr+offset, EEPROM_PAGE_SIZE);
+#elif defined(EEPROM_ENABLE_BYGPIO)
+			EE24AAXX_WritePage(addr+offset, &Transmit_Data[addr], EEPROM_PAGE_SIZE);
+#endif
+			delay_ms(10);
+		}
+
+		if(rest != 0)
+		{
+			addr = page*EEPROM_PAGE_SIZE;
+#if defined(EEPROM_ENABLE_BYI2CPERI)
+			EEP_Write(&Transmit_Data[addr], addr+offset, rest);
+#elif defined(EEPROM_ENABLE_BYGPIO)
+			EE24AAXX_WritePage(addr+offset, &Transmit_Data[addr], rest);
+#endif
+			delay_ms(10);
+		}
+	}
+
 	delay_ms(50);
 
 	return 0;
-#else
-	int ret=0;
-	uint8_t Transmit_Data[EEPROM_BLOCK_SIZE];
-	uint16_t address;
-
-	memset(&Transmit_Data[0], 0x00, EEPROM_BLOCK_SIZE);
-	memcpy(&Transmit_Data[0], data, size);
-
-	if(size > EEPROM_BLOCK_SIZE)
-		size = EEPROM_BLOCK_SIZE;
-
-	if(isConfig == 0)
-		address = 0x00;
-	else
-		address = 0x00+EEPROM_BLOCK_SIZE;
-
-	EE24AAXX_Write(address, &Transmit_Data[0], size);
-
-#if 0
-	int j;
-	printf("\r\n");
-    printf("[DB Boot W0x%.2X] ", address);
-	for(j=0; j<162; j++)
-		printf("0x%.2X ",Transmit_Data[j]);
-	printf("\r\n");
-#endif
-	delay_ms(100);
-	delay_ms(100);
-	delay_ms(50);
-
-	return ret;
-#endif
-
 #endif
 }
