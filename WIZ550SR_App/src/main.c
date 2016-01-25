@@ -62,14 +62,21 @@ int main(int argc, char* argv[])
 	NVIC_SetVectorTable(NVIC_VectTab_FLASH, 0x7000);
 	//__enable_irq();
 	
+#if (WIZ550SR_ENABLE == 0)
 	LED_Init(LED1);
 	LED_Init(LED2);
 	
 	LED_On(LED1);
 	LED_Off(LED2);
+#endif
+
+#if (WIZ550SR_ENABLE == 1)
+	STAT_Init();
+	STAT_Off();
+#endif
 
 	//BOOT_Pin_Init();
-	Board_factory_Init();
+	//Board_factory_Init();
 
 	/* Initialize the I2C EEPROM driver ----------------------------------------*/
 #if defined(EEPROM_ENABLE)

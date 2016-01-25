@@ -11,6 +11,7 @@
 
 #include "stm32f10x.h"
 #include "rccHandler.h"
+#include "common.h"
 
 /**
  * @brief  Sets System clock frequency to 72MHz and configure HCLK, PCLK2
@@ -73,7 +74,11 @@ void RCC_Configuration(void)
 		//  RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2|RCC_APB1Periph_TIM3|RCC_APB1Periph_USART2, ENABLE);
 		RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
 
+#if (WIZ550SR_ENABLE == 1)
+		RCC_APB1PeriphClockCmd(RCC_APB2Periph_SPI1, ENABLE);
+#else
 		RCC_APB1PeriphClockCmd(RCC_APB1Periph_SPI2, ENABLE);
+#endif
 
 		RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB | RCC_APB2Periph_GPIOC
 				| RCC_APB2Periph_AFIO | RCC_APB2Periph_USART1, ENABLE);

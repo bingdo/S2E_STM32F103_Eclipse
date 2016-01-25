@@ -11,4 +11,6 @@
 
 #define APP_BASE		0x08007000			// Boot Size 28K
 
+#define WIZ550SR_ENABLE	0
+
 #endif
