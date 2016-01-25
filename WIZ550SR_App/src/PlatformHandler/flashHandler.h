@@ -2,19 +2,21 @@
 #ifndef __FLASHHANDLER_H__
 #define __FLASHHANDLER_H__
 
+#include "common.h"
+
 #define MULTIFLASH_ENABLE
 
 #define FLASH_PAGE0_BASE	0x08000000
-#define FLASH_CONFIG_PAGE	3
+#define FLASH_CONFIG_PAGE	0//3
 #if !defined(MULTIFLASH_ENABLE)
-#define FLASH_PAGE_SIZE		0x400
+//#define FLASH_PAGE_SIZE		0x400
+//#define FLASH_PAGE			128
+//#define FLASH_BOOT_PAGE		28//24					// 1 page 1K
+//#define CONFIG_PAGE_ADDR	(0x8000000+(FLASH_PAGE_SIZE*126))	// Page126,127	(STM32103RBT6, the last page of 128kB on-chip flash, 2kB size)
+#define FLASH_PAGE_SIZE		0x800
 #define FLASH_PAGE			128
-#define FLASH_BOOT_PAGE		28//24					// 1 page 1K
-#define CONFIG_PAGE_ADDR	(0x8000000+(FLASH_PAGE_SIZE*126))	// Page126,127	(STM32103RBT6, the last page of 128kB on-chip flash, 2kB size)
-//#define FLASH_PAGE_SIZE		0x800
-//#define FLASH_PAGE			64
-//#define FLASH_BOOT_PAGE		14//12					// 1 page 2K
-//#define CONFIG_PAGE_ADDR	(0x8000000+(FLASH_PAGE_SIZE*62))	// Page62,63	(STM32103RCT6, the last page of 256kB on-chip flash, 4kB size)
+#define FLASH_BOOT_PAGE		14//12					// 1 page 2K
+#define CONFIG_PAGE_ADDR	(0x8000000+(FLASH_PAGE_SIZE*126))	// Page126,127	(STM32103RCT6, the last page of 256kB on-chip flash, 4kB size)
 #define FLASH_APP_PAGE		(FLASH_PAGE - FLASH_BOOT_PAGE - FLASH_CONFIG_PAGE)
 #endif
 

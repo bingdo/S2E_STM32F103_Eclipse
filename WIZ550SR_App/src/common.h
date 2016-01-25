@@ -20,6 +20,8 @@
 #define APP_BASE		0x08007000			// Boot Size 28K
 #define WORK_BUF_SIZE	2048
 
+#define WIZ550SR_ENABLE	0
+
 extern uint8_t op_mode;
 
 #endif

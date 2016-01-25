@@ -2,6 +2,8 @@
 #ifndef __EEPROMHANDLER_H__
 #define __EEPROMHANDLER_H__
 
+#include "common.h"
+
 //#define EEPROM_ENABLE
 #if defined(EEPROM_ENABLE)
 	#define EEPROM_ENABLE_BYI2CPERI
@@ -20,7 +22,7 @@
 #define EE24AA128 16384
 #define EE24AA256 32768
 
-#define EE_TYPE  EE24AA04
+#define EE_TYPE  EE24AA16
 
 #if (EE_TYPE > EE24AA16)
 #define EEPROM_BLOCK_SIZE       	256
@@ -28,7 +30,7 @@
 #else
 #define EEPROM_BLOCK_SIZE       	256
 #define EEPROM_PAGE_SIZE       		16
-#define EEPROM_BLOCK_COUNT       	2 // 2(24AA04), 4(24AA08), 8(24AA16)
+#define EEPROM_BLOCK_COUNT       	8 // 2(24AA04), 4(24AA08), 8(24AA16)
 #endif
 
 void bsp_24aaxx_gpio_init(void);

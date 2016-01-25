@@ -105,11 +105,13 @@ int main(int argc, char* argv[])
 
 	RCC_Configuration();
 	
+#if (WIZ550SR_ENABLE == 0)
 	LED_Init(LED1);
 	LED_Init(LED2);
 	
 	LED_On(LED1);
 	LED_Off(LED2);
+#endif
 
 	BOOT_Pin_Init();
 

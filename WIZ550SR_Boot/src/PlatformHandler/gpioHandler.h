@@ -3,6 +3,7 @@
 #define __GPIOHANDLER_H__
 
 #include <stdint.h>
+#include "common.h"
 
 #define LEDn                             2
 
@@ -14,9 +15,15 @@
 #define LED2_GPIO_PORT					GPIOC
 #define LED2_GPIO_CLK					RCC_APB2Periph_GPIOC
 
+#if (WIZ550SR_ENABLE == 1)
+#define BOOT_PIN						GPIO_Pin_9
+#define BOOT_GPIO_PORT					GPIOB
+#define BOOT_GPIO_CLK					RCC_APB2Periph_GPIOB
+#else
 #define BOOT_PIN						GPIO_Pin_12
 #define BOOT_GPIO_PORT					GPIOC
 #define BOOT_GPIO_CLK					RCC_APB2Periph_GPIOC
+#endif
 
 typedef enum
 {
