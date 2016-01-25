@@ -16,8 +16,10 @@ void TIM2_IRQHandler(void)
 		mill_sec++;
 
 		if((mill_sec % 100) == 0) {
+#if (WIZ550SR_ENABLE == 0)
 			LED_Toggle(LED1);
 			LED_Toggle(LED2);
+#endif
 		}
 
 		if((mill_sec % 1000) == 0) {

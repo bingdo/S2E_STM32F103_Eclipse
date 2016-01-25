@@ -648,7 +648,11 @@ void s2e_run(uint8_t sock)
 				net->state = net_udp;
 			else if(sock_state == SOCK_ESTABLISHED) {
 				net->state = net_connect;
+#if (WIZ550SR_ENABLE == 1)
+				STAT_On();
+#else
 				LED_On(LED2);
+#endif
 
 				if(option->pw_connect[0] != 0) {
 					if(net->working_mode == TCP_MIXED_MODE) {
@@ -663,7 +667,11 @@ void s2e_run(uint8_t sock)
 		case net_connect:
 			if(sock_state != SOCK_ESTABLISHED) {
 				net->state = net_disconnect;
+#if (WIZ550SR_ENABLE == 1)
+				STAT_Off();
+#else
 				LED_Off(LED2);
+#endif
 
 				mixed_state = MIXED_SERVER;
 			}
@@ -672,13 +680,21 @@ void s2e_run(uint8_t sock)
 		case net_udp:
 			if(sock_state != SOCK_UDP) {
 				net->state = net_disconnect;
+#if (WIZ550SR_ENABLE == 1)
+				STAT_Off();
+#else
 				LED_Off(LED2);
+#endif
 			}
 			break;
 
 		default:
 			net->state = net_disconnect;
+#if (WIZ550SR_ENABLE == 1)
+			STAT_Off();
+#else
 			LED_Off(LED2);
+#endif
 			break;
 	}
 

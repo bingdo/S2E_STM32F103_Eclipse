@@ -107,7 +107,9 @@ void TIM2_IRQHandler(void)
 
         /* Second Process */
         if((mill_cnt % 1000) == 0) {
-            LED_Toggle(LED2);
+#if (WIZ550SR_ENABLE == 0)
+            LED_Toggle(LED1);
+#endif
             mill_cnt = 0;
             sec_cnt++;
 

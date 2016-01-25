@@ -171,3 +171,30 @@ void Board_factory_Init(void)
     /* Enable the Key EXTI line Interrupt */
     NVIC_ClearPendingIRQ(EXTI15_10_IRQn);
 }
+
+#if (WIZ550SR_ENABLE == 1)
+void STAT_Init(void)
+{
+  GPIO_InitTypeDef  GPIO_InitStructure;
+
+  /* Enable the GPIO_LED Clock */
+  RCC_APB2PeriphClockCmd(STAT_GPIO_CLK, ENABLE);
+
+  /* Configure the GPIO_LED pin */
+  GPIO_InitStructure.GPIO_Pin = STAT_PIN;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+
+  GPIO_Init(STAT_GPIO_PORT, &GPIO_InitStructure);
+}
+
+void STAT_On(void)
+{
+  GPIO_ResetBits(STAT_GPIO_PORT, STAT_PIN);
+}
+
+void STAT_Off(void)
+{
+  GPIO_SetBits(STAT_GPIO_PORT, STAT_PIN);
+}
+#endif

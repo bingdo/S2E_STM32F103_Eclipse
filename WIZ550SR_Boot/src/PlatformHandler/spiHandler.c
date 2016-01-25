@@ -93,9 +93,10 @@ void W5500_Init(void)
 
 	wizchip_deselect();
 
-	GPIO_ResetBits(GPIOB, W5500_RESET_PIN);
-	Delay(1000); // Is this enough?
-	GPIO_SetBits(GPIOB, W5500_RESET_PIN);
+	GPIO_ResetBits(W5500_RESET_PORT, W5500_RESET_PIN);
+	//Delay(1000); // Is this enough?
+	delay_ms(1); //TODO
+	GPIO_SetBits(W5500_RESET_PORT, W5500_RESET_PIN);
 
 	// Wiznet
 	reg_wizchip_cs_cbfunc(wizchip_select, wizchip_deselect);
@@ -107,7 +108,7 @@ void W5500_Init(void)
 		return;
 	}
 
-	Delay(10000);
+	//Delay(10000);
 }
 
 #if 0
