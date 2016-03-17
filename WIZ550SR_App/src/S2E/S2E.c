@@ -650,9 +650,8 @@ void s2e_run(uint8_t sock)
 				net->state = net_connect;
 #if (WIZ550SR_ENABLE == 1)
 				STAT_On();
-#else
-				LED_On(LED2);
 #endif
+				LED_On(LED2);
 
 				if(option->pw_connect[0] != 0) {
 					if(net->working_mode == TCP_MIXED_MODE) {
@@ -669,9 +668,8 @@ void s2e_run(uint8_t sock)
 				net->state = net_disconnect;
 #if (WIZ550SR_ENABLE == 1)
 				STAT_Off();
-#else
-				LED_Off(LED2);
 #endif
+				LED_Off(LED2);
 
 				mixed_state = MIXED_SERVER;
 			}
@@ -682,9 +680,8 @@ void s2e_run(uint8_t sock)
 				net->state = net_disconnect;
 #if (WIZ550SR_ENABLE == 1)
 				STAT_Off();
-#else
-				LED_Off(LED2);
 #endif
+				LED_Off(LED2);
 			}
 			break;
 
@@ -692,9 +689,8 @@ void s2e_run(uint8_t sock)
 			net->state = net_disconnect;
 #if (WIZ550SR_ENABLE == 1)
 			STAT_Off();
-#else
-			LED_Off(LED2);
 #endif
+			LED_Off(LED2);
 			break;
 	}
 

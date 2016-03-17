@@ -102,18 +102,21 @@ int application_update(void)
 int main(int argc, char* argv[])
 {
 	int ret;
+#if defined(WIZ1x0SR_CFGTOOL)
+	S2E_Packet *value = get_S2E_Packet_pointer();
+#endif
 
 	RCC_Configuration();
+	//GPIO_Configuration();
 	
-#if (WIZ550SR_ENABLE == 0)
 	LED_Init(LED1);
 	LED_Init(LED2);
 	
 	LED_On(LED1);
 	LED_Off(LED2);
-#endif
 
 	BOOT_Pin_Init();
+	//GPIO_PinRemapConfig (GPIO_Remap_SWJ_Disable, ENABLE);
 
 	/* Initialize the I2C EEPROM driver ----------------------------------------*/
 #if defined(EEPROM_ENABLE)
@@ -127,6 +130,8 @@ int main(int argc, char* argv[])
 #if defined(MULTIFLASH_ENABLE)
 	probe_flash();
 #endif
+
+	//USART1_Configuration();
 
 	/* Load Configure Information */
 	load_S2E_Packet_from_storage();
@@ -143,25 +148,42 @@ int main(int argc, char* argv[])
 	Net_Conf();
 	TFTP_init(SOCK_TFTP, socket_buf);
 
-	ret = application_update();
+	//printf("[DB] fw_ver:%d \r\n", value->fw_ver[0]);
+#if defined(WIZ1x0SR_CFGTOOL)
+	if(value->fw_ver[0] != 82)
+#endif
+	{
+		ret = application_update();
 
-	if((get_bootpin_Status() == 0) && (ret != TFTP_FAIL)) {
-		uint32_t tmp;
+		//printf("[DB] bootpin:%d ret:%d \r\n", get_bootpin_Status(), ret);
+#if (WIZ550SR_ENABLE == 1)
+		if((get_bootpin_Status() == 1) && (ret != TFTP_FAIL))
+#else // WIZ550web module only
+		if((get_bootpin_Status() == 0) && (ret != TFTP_FAIL))
+#endif
+		{
+			uint32_t tmp;
 
 #if !defined(MULTIFLASH_ENABLE)
-		tmp = *(volatile uint32_t *)APP_BASE;
+			tmp = *(volatile uint32_t *)APP_BASE;
 #else
-		tmp = *(volatile uint32_t *)flash.flash_app_base;
+			tmp = *(volatile uint32_t *)flash.flash_app_base;
 #endif
 
-		if((tmp & 0xffffffff) != 0xffffffff) {
-			application_jump();
+			if((tmp & 0xffffffff) != 0xffffffff) {
+				application_jump();
+			}
 		}
 	}
 
 	while(1) {
 		if(g_op_mode == NORMAL_MODE) {
+#if defined(WIZ1x0SR_CFGTOOL)
+			do_udp_configex(SOCK_CONFIGEX);
+		    do_fw_update();
+#else
 			do_udp_config(SOCK_CONFIG);
+#endif
 		} else {
 			if(TFTP_run() != TFTP_PROGRESS)
 				g_op_mode = NORMAL_MODE;

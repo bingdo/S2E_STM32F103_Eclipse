@@ -75,7 +75,7 @@ void RCC_Configuration(void)
 		RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
 
 #if (WIZ550SR_ENABLE == 1)
-		RCC_APB1PeriphClockCmd(RCC_APB2Periph_SPI1, ENABLE);
+		RCC_APB2PeriphClockCmd(RCC_APB2Periph_SPI1, ENABLE);
 #else
 		RCC_APB1PeriphClockCmd(RCC_APB1Periph_SPI2, ENABLE);
 #endif

@@ -5,7 +5,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f10x.h"
 
-#define EPP_I2C				I2C1
+#define EEP_I2C				I2C1
 #define EEP_Address			0xA0
 #define EEP_MacAddresss		0xFA
 #define EEP_I2C_RCC			RCC_APB1Periph_I2C1

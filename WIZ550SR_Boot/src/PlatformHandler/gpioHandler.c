@@ -1,6 +1,7 @@
 
 #include "stm32f10x.h"
 #include "gpioHandler.h"
+#include "spiHandler.h"
 
 GPIO_TypeDef* GPIO_PORT[LEDn] = {LED1_GPIO_PORT, LED2_GPIO_PORT};
 const uint16_t GPIO_PIN[LEDn] = {LED1_PIN, LED2_PIN};
@@ -111,3 +112,26 @@ uint8_t get_bootpin_Status()
 	return GPIO_ReadInputDataBit(BOOT_GPIO_PORT, BOOT_PIN);
 }
 
+/**
+  * @brief  Configures the GPIO
+  * @param  None
+  * @retval None
+  */
+void GPIO_Configuration(void)
+{
+  GPIO_InitTypeDef  GPIO_InitStructure;
+
+  // Port C Output
+  GPIO_InitStructure.GPIO_Pin = W5500_RESET_PIN;
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+  GPIO_Init(W5500_RESET_PORT, &GPIO_InitStructure);
+
+  GPIO_SetBits(W5500_RESET_PORT, W5500_RESET_PIN);
+
+  // Port C input
+  GPIO_InitStructure.GPIO_Pin = INT_W5500_PIN;
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
+  GPIO_Init(INT_W5500_PORT, &GPIO_InitStructure);
+}

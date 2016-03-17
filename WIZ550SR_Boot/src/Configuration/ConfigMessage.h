@@ -2,8 +2,12 @@
 #ifndef __CONFIGMESSAGE_H__
 #define __CONFIGMESSAGE_H__
 
+#include "stm32f10x.h"
+
 /* UDP port numbers for Remote Configuration */
 #define REMOTE_CLIENT_PORT		6550	/* from client to server */
+#define REMOTE_CLIENT_PORT_EX	1460	/* from client to server */
+#define REMOTE_UPDATE_PORT		1470	/* from client to server */
 
 #define STX						0xA5
 
@@ -139,7 +143,58 @@ typedef struct __Firmware_Upload_Info {
 	uint8_t filename[50];
 } __attribute__((packed)) Firmware_Upload_Info;
 
+#define	REMOTE_FIND		1
+#define	REMOTE_SETT		2
+#define CONFIG_MSG_SIZE		163		// 90 + 64 + 9
+typedef struct _CONFIG_MSG
+{
+	u8  op[4];
+	u8  Mac[6];
+	u8  Kind; 	// 0: Client 1: Mixed 2: Server mode.
+	u8  Lip[4];
+	u8  Subnet[4];
+	u8  Gw[4];
+	u8	LPort[2];
+	u8  Sip[4];
+	u8	SPort[2];
+	u8  Baud;
+	u8  Dsize;
+	u8  Parity;
+	u8  Stopbit;
+	u8  Flow;
+	u8  D_ch;
+	u8	D_size[2];
+	u8	D_time[2];
+	u8	I_time[2];
+	u8  Debug;
+	u8	SW_Ver[2];
+	u8  DHCP;
+	u8  UDP;
+	u8  Status;
+	u8  DNS_Flag;			// 50 bytes
+	u8  DNS_Server_IP[4];
+	u8  Domain_Name[32];
+	u8  SCfg;
+	u8  SCfgStr[3];
+
+	// ver 2.0
+	u8  PPPoE_ID[32];
+	u8  PPPoE_PWD[32];
+
+	// ver 2.1
+	u8  EnConnPass;
+	u8  ConnPass[8];
+}
+CONFIG_MSG;
+
+typedef union _IGM_INFO {
+	CONFIG_MSG s;
+	u8 c[CONFIG_MSG_SIZE];
+} IGM_INFO;
+
 void do_udp_config(uint8_t sock);
+void do_udp_configex(uint8_t sock);
+void do_fw_update(void);
 void reply_firmware_upload_done(uint8_t sock);
 
 #endif

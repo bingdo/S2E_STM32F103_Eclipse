@@ -6,6 +6,10 @@
 #include "ConfigData.h"
 #include "ConfigMessage.h"
 #include "storageHandler.h"
+#include "timerHandler.h"
+#if defined(WIZ1x0SR_CFGTOOL)
+#include "flashHandler.h"
+#endif
 
 static void encrypt(uint8_t key, uint8_t *buffer, uint16_t len)
 {
@@ -300,6 +304,8 @@ static void process_firmware_upload_init(uint8_t sock, Remote_Info *remote_info,
 	}
 	sendto(sock, buffer, ptr, remote_info->ip, remote_info->port);
 
+	delay_ms(50);
+
 	// Reboot to bootloader
 	NVIC_SystemReset();
 }
@@ -514,3 +520,232 @@ void do_udp_config(uint8_t sock)
 		break;
 	}
 }
+
+#if defined(WIZ1x0SR_CFGTOOL)
+void do_udp_configex(uint8_t sock)
+{
+	uint8_t sckState;
+	uint16_t len;
+	Remote_Info remote_info;
+	WIZnet_Header wiznet_header;
+	IGM_INFO ConfigMsg;
+	IGM_INFO Shadow_Msg;
+	u8 serverip[4];
+	u16 serverport = 0;
+	u8 type = 0;
+	S2E_Packet *s2e_packet = get_S2E_Packet_pointer();
+
+	getsockopt(sock, SO_STATUS, &sckState);
+	switch (sckState) {
+	case SOCK_UDP:
+		getsockopt(sock, SO_RECVBUF, &len);
+		//if (len >= sizeof(WIZnet_Header))
+		if(len >= 12)
+		{
+			recvfrom(sock, (uint8_t *)&Shadow_Msg, CONFIG_MSG_SIZE, remote_info.ip, &remote_info.port);
+			//printf("[DB]wiznet_header1: %d.%d.%d.%d:%d len:%d\r\n", remote_info.ip[0], remote_info.ip[1], remote_info.ip[2], remote_info.ip[3], remote_info.port, len);
+			//printf("[DB]wiznet_header2:[0x%.2X][0x%.2X][0x%.2X][0x%.2X]\r\n",Shadow_Msg.s.op[0], Shadow_Msg.s.op[1], Shadow_Msg.s.op[2], Shadow_Msg.s.op[3]);
+			//printf("[DB]wiznet_header3:[%c%c%c%c]\r\n",Shadow_Msg.s.op[0], Shadow_Msg.s.op[1], Shadow_Msg.s.op[2], Shadow_Msg.s.op[3]);
+
+			if ( (Shadow_Msg.s.op[0] == 'F') && (Shadow_Msg.s.op[1] == 'I') && (Shadow_Msg.s.op[2] == 'N') && (Shadow_Msg.s.op[3] == 'D') )
+			{
+				ConfigMsg.s.Mac[0] = s2e_packet->network_info_common.mac[0];
+				ConfigMsg.s.Mac[1] = s2e_packet->network_info_common.mac[1];
+				ConfigMsg.s.Mac[2] = s2e_packet->network_info_common.mac[2];
+				ConfigMsg.s.Mac[3] = s2e_packet->network_info_common.mac[3];
+				ConfigMsg.s.Mac[4] = s2e_packet->network_info_common.mac[4];
+				ConfigMsg.s.Mac[5] = s2e_packet->network_info_common.mac[5];
+				if(s2e_packet->network_info[0].working_mode == TCP_SERVER_MODE)
+					ConfigMsg.s.Kind = 2;
+				else if(s2e_packet->network_info[0].working_mode == TCP_MIXED_MODE)
+					ConfigMsg.s.Kind = 1;
+				else if(s2e_packet->network_info[0].working_mode == TCP_CLIENT_MODE)
+					ConfigMsg.s.Kind = 0;
+				else if(s2e_packet->network_info[0].working_mode == UDP_MODE)
+					ConfigMsg.s.UDP = 1;
+				ConfigMsg.s.Lip[0] = s2e_packet->network_info_common.local_ip[0];
+				ConfigMsg.s.Lip[1] = s2e_packet->network_info_common.local_ip[1];
+				ConfigMsg.s.Lip[2] = s2e_packet->network_info_common.local_ip[2];
+				ConfigMsg.s.Lip[3] = s2e_packet->network_info_common.local_ip[3];
+				ConfigMsg.s.Subnet[0] = s2e_packet->network_info_common.subnet[0];
+				ConfigMsg.s.Subnet[1] = s2e_packet->network_info_common.subnet[1];
+				ConfigMsg.s.Subnet[2] = s2e_packet->network_info_common.subnet[2];
+				ConfigMsg.s.Subnet[3] = s2e_packet->network_info_common.subnet[3];
+				ConfigMsg.s.Gw[0] = s2e_packet->network_info_common.gateway[0];
+				ConfigMsg.s.Gw[1] = s2e_packet->network_info_common.gateway[1];
+				ConfigMsg.s.Gw[2] = s2e_packet->network_info_common.gateway[2];
+				ConfigMsg.s.Gw[3] = s2e_packet->network_info_common.gateway[3];
+				ConfigMsg.s.LPort[0] = (uint8_t)(s2e_packet->network_info[0].local_port>>8);
+				ConfigMsg.s.LPort[1] = (uint8_t)(s2e_packet->network_info[0].local_port);
+				ConfigMsg.s.Sip[0] = s2e_packet->network_info[0].remote_ip[0];
+				ConfigMsg.s.Sip[1] = s2e_packet->network_info[0].remote_ip[1];
+				ConfigMsg.s.Sip[2] = s2e_packet->network_info[0].remote_ip[2];
+				ConfigMsg.s.Sip[3] = s2e_packet->network_info[0].remote_ip[3];
+				ConfigMsg.s.SPort[0] = (uint8_t)(s2e_packet->network_info[0].remote_port>>8);
+				ConfigMsg.s.SPort[1] = (uint8_t)(s2e_packet->network_info[0].remote_port);
+				ConfigMsg.s.Baud = 0xFF;
+				ConfigMsg.s.Dsize = s2e_packet->serial_info[0].data_bits;
+				ConfigMsg.s.Parity = s2e_packet->serial_info[0].parity;
+				ConfigMsg.s.Stopbit = s2e_packet->serial_info[0].stop_bits;
+				ConfigMsg.s.Flow = s2e_packet->serial_info[0].flow_control;
+				if(s2e_packet->network_info[0].packing_delimiter_length == 1)
+					ConfigMsg.s.D_ch = s2e_packet->network_info[0].packing_delimiter[0];
+				else
+					ConfigMsg.s.D_ch = 0;
+				ConfigMsg.s.D_size[0] = (uint8_t)(s2e_packet->network_info[0].packing_size>>8);
+				ConfigMsg.s.D_size[1] = (uint8_t)(s2e_packet->network_info[0].packing_size);
+				ConfigMsg.s.D_time[0] = (uint8_t)(s2e_packet->network_info[0].packing_time>>8);
+				ConfigMsg.s.D_time[1] = (uint8_t)(s2e_packet->network_info[0].packing_time);
+				ConfigMsg.s.I_time[0] = (uint8_t)(s2e_packet->network_info[0].inactivity>>8);
+				ConfigMsg.s.I_time[1] = (uint8_t)(s2e_packet->network_info[0].inactivity);
+				ConfigMsg.s.Debug = 0;
+				ConfigMsg.s.SW_Ver[0] = (uint8_t)(s2e_packet->fw_ver[0]);
+				ConfigMsg.s.SW_Ver[1] = s2e_packet->fw_ver[1];
+				ConfigMsg.s.DHCP = s2e_packet->options.dhcp_use;
+				//ConfigMsg.s.UDP = 0;
+				ConfigMsg.s.Status = s2e_packet->network_info[0].state;
+				ConfigMsg.s.DNS_Flag = s2e_packet->options.dns_use;
+				ConfigMsg.s.DNS_Server_IP[0] = s2e_packet->options.dns_server_ip[0];
+				ConfigMsg.s.DNS_Server_IP[1] = s2e_packet->options.dns_server_ip[1];
+				ConfigMsg.s.DNS_Server_IP[2] = s2e_packet->options.dns_server_ip[2];
+				ConfigMsg.s.DNS_Server_IP[3] = s2e_packet->options.dns_server_ip[3];
+				memset(ConfigMsg.s.Domain_Name, '\0', 32);
+				memcpy(ConfigMsg.s.Domain_Name, s2e_packet->options.dns_domain_name, 32);
+				ConfigMsg.s.SCfg = s2e_packet->options.serial_command;
+				ConfigMsg.s.SCfgStr[0] = s2e_packet->options.serial_trigger[0];
+				ConfigMsg.s.SCfgStr[1] = s2e_packet->options.serial_trigger[1];
+				ConfigMsg.s.SCfgStr[2] = s2e_packet->options.serial_trigger[2];
+				memset(ConfigMsg.s.PPPoE_ID, '\0', 32);
+				memset(ConfigMsg.s.PPPoE_PWD, '\0', 32);
+				//memcpy(ConfigMsg.s.PPPoE_ID, s2e_packet->options.pppoe_id, 32);
+				//memcpy(ConfigMsg.s.PPPoE_PWD, s2e_packet->options.pppoe_pwd, 32);
+				ConfigMsg.s.EnConnPass = 1;
+				memset(ConfigMsg.s.ConnPass, '\0', 8);
+				memcpy(ConfigMsg.s.ConnPass, s2e_packet->options.pw_connect, 8);
+
+				Shadow_Msg = ConfigMsg;	// copy
+				//memcpy(&Shadow_Msg, &ConfigMsg, CONFIG_MSG_SIZE);
+
+				Shadow_Msg.s.op[0] = 'I';
+				Shadow_Msg.s.op[1] = 'M';
+				Shadow_Msg.s.op[2] = 'I';
+				Shadow_Msg.s.op[3] = 'N';
+
+				// DST IP : BroadCasting
+				serverip[0] = 0xff;
+				serverip[1] = 0xff;
+				serverip[2] = 0xff;
+				serverip[3] = 0xff;
+				serverport = remote_info.port;
+
+				sendto(sock, (u8 *)&Shadow_Msg, CONFIG_MSG_SIZE, remote_info.ip, remote_info.port);
+				//sendto(sock, (u8 *)&Shadow_Msg, CONFIG_MSG_SIZE, serverip, serverport);
+
+				type = REMOTE_FIND;
+			}
+			else if ( (Shadow_Msg.s.op[0] == 'S')&& (Shadow_Msg.s.op[1] == 'E')&& (Shadow_Msg.s.op[2] == 'T')&& (Shadow_Msg.s.op[3] == 'T') )
+			{
+				Shadow_Msg.s.op[0] = 'S';
+				Shadow_Msg.s.op[1] = 'E';
+				Shadow_Msg.s.op[2] = 'T';
+				Shadow_Msg.s.op[3] = 'C';
+
+				// DST IP : BroadCasting
+				serverport = remote_info.port;
+				serverip[0] = 0xff;
+				serverip[1] = 0xff;
+				serverip[2] = 0xff;
+				serverip[3] = 0xff;
+
+				sendto(sock, (u8*)&Shadow_Msg, CONFIG_MSG_SIZE, remote_info.ip, remote_info.port);
+				//sendto(sock, (u8*)&Shadow_Msg, CONFIG_MSG_SIZE, serverip, serverport);
+
+				ConfigMsg = Shadow_Msg;
+
+				if(ConfigMsg.s.Kind == 0)
+					s2e_packet->network_info[0].working_mode = TCP_CLIENT_MODE;
+				else if(ConfigMsg.s.Kind == 1)
+					s2e_packet->network_info[0].working_mode = TCP_MIXED_MODE;
+				else if(ConfigMsg.s.Kind == 2)
+					s2e_packet->network_info[0].working_mode = TCP_SERVER_MODE;
+				else if(ConfigMsg.s.UDP > 0)
+					s2e_packet->network_info[0].working_mode = UDP_MODE;
+				s2e_packet->network_info_common.local_ip[0] = ConfigMsg.s.Lip[0];
+				s2e_packet->network_info_common.local_ip[1] = ConfigMsg.s.Lip[1];
+				s2e_packet->network_info_common.local_ip[2] = ConfigMsg.s.Lip[2];
+				s2e_packet->network_info_common.local_ip[3] = ConfigMsg.s.Lip[3];
+				s2e_packet->network_info_common.subnet[0] = ConfigMsg.s.Subnet[0];
+				s2e_packet->network_info_common.subnet[1] = ConfigMsg.s.Subnet[1];
+				s2e_packet->network_info_common.subnet[2] = ConfigMsg.s.Subnet[2];
+				s2e_packet->network_info_common.subnet[3] = ConfigMsg.s.Subnet[3];
+				s2e_packet->network_info_common.gateway[0] = ConfigMsg.s.Gw[0];
+				s2e_packet->network_info_common.gateway[1] = ConfigMsg.s.Gw[1];
+				s2e_packet->network_info_common.gateway[2] = ConfigMsg.s.Gw[2];
+				s2e_packet->network_info_common.gateway[3] = ConfigMsg.s.Gw[3];
+				s2e_packet->network_info[0].local_port = (uint16_t)((ConfigMsg.s.LPort[0]<<8) + ConfigMsg.s.LPort[1]);
+				s2e_packet->network_info[0].remote_ip[0] = ConfigMsg.s.Sip[0];
+				s2e_packet->network_info[0].remote_ip[1] = ConfigMsg.s.Sip[1];
+				s2e_packet->network_info[0].remote_ip[2] = ConfigMsg.s.Sip[2];
+				s2e_packet->network_info[0].remote_ip[3] = ConfigMsg.s.Sip[3];
+				s2e_packet->network_info[0].remote_port = (uint16_t)((ConfigMsg.s.SPort[0]<<8) + ConfigMsg.s.SPort[1]);
+				s2e_packet->serial_info[0].baud_rate = 115200;
+				s2e_packet->serial_info[0].data_bits= ConfigMsg.s.Dsize;
+				s2e_packet->serial_info[0].parity = ConfigMsg.s.Parity;
+				s2e_packet->serial_info[0].stop_bits = ConfigMsg.s.Stopbit;
+				s2e_packet->serial_info[0].flow_control= ConfigMsg.s.Flow;
+				if(ConfigMsg.s.D_ch > 0)
+				{
+					s2e_packet->network_info[0].packing_delimiter_length = 1;
+					s2e_packet->network_info[0].packing_delimiter[0] = ConfigMsg.s.D_ch;
+				}
+				else
+				{
+					s2e_packet->network_info[0].packing_delimiter_length = 0;
+					s2e_packet->network_info[0].packing_delimiter[0] = 0;
+				}
+				s2e_packet->network_info[0].packing_size = (uint16_t)((ConfigMsg.s.D_size[0]<<8) + ConfigMsg.s.D_size[1]);
+				s2e_packet->network_info[0].packing_time = (uint16_t)((ConfigMsg.s.D_time[0]<<8) + ConfigMsg.s.D_time[1]);
+				s2e_packet->network_info[0].inactivity = (uint16_t)((ConfigMsg.s.I_time[0]<<8) + ConfigMsg.s.I_time[1]);
+
+				s2e_packet->options.dhcp_use = ConfigMsg.s.DHCP;
+				s2e_packet->network_info[0].state = ConfigMsg.s.Status;
+				s2e_packet->options.dns_use = ConfigMsg.s.DNS_Flag;
+				s2e_packet->options.dns_server_ip[0] = ConfigMsg.s.DNS_Server_IP[0];
+				s2e_packet->options.dns_server_ip[1] = ConfigMsg.s.DNS_Server_IP[1];
+				s2e_packet->options.dns_server_ip[2] = ConfigMsg.s.DNS_Server_IP[2];
+				s2e_packet->options.dns_server_ip[3] = ConfigMsg.s.DNS_Server_IP[3];
+				memset(s2e_packet->options.dns_domain_name, '\0', 50);
+				memcpy(s2e_packet->options.dns_domain_name, ConfigMsg.s.Domain_Name, 32);
+				s2e_packet->options.serial_command = ConfigMsg.s.SCfg;
+				s2e_packet->options.serial_trigger[0] = ConfigMsg.s.SCfgStr[0];
+				s2e_packet->options.serial_trigger[1] = ConfigMsg.s.SCfgStr[1];
+				s2e_packet->options.serial_trigger[2] = ConfigMsg.s.SCfgStr[2];
+
+				memset(s2e_packet->options.pw_connect, '\0', 10);
+				memcpy(s2e_packet->options.pw_connect, ConfigMsg.s.ConnPass, 8);
+
+				save_S2E_Packet_to_storage();
+
+				type = REMOTE_SETT;
+
+				NVIC_SystemReset();
+			}
+			else if ( (Shadow_Msg.s.op[0] == 'F')&& (Shadow_Msg.s.op[1] == 'I')&& (Shadow_Msg.s.op[2] == 'R')&& (Shadow_Msg.s.op[3] == 'S') )
+			{
+				//if(s2e_packet->network_info[0].state == 1) disconnect(SOCK_DATA);
+				//disconnect(SOCK_CONFIG);
+
+				s2e_packet->fw_ver[0] = 82;
+
+				save_S2E_Packet_to_storage();
+
+		        NVIC_SystemReset();
+			}
+		}
+		break;
+	case SOCK_CLOSED:
+		socket(sock, Sn_MR_UDP, REMOTE_CLIENT_PORT_EX, SF_IO_NONBLOCK);
+		break;
+	}
+}
+#endif
