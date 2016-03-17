@@ -56,7 +56,7 @@ int read_storage(uint8_t isConfig, void *data, uint16_t size)
 		offset = 0x00+EEPROM_BLOCK_SIZE;
 
 #if defined(EEPROM_ENABLE_BYI2CPERI)
-	EEP_Read(&Receive_Data[0], addr+offset, size);
+	EEP_Read(&Receive_Data[0], (uint16_t)(addr+offset), size);
 #elif defined(EEPROM_ENABLE_BYGPIO)
 	EE24AAXX_Read(addr+offset, &Receive_Data[0], size);
 #endif

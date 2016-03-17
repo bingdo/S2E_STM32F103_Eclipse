@@ -7,20 +7,30 @@
 
 #define LEDn                             2
 
-#define LED1_PIN						GPIO_Pin_4
-#define LED1_GPIO_PORT					GPIOC
-#define LED1_GPIO_CLK					RCC_APB2Periph_GPIOC
+#if (WIZ550SR_ENABLE == 1)
+#define LED1_PIN						GPIO_Pin_0
+#define LED1_GPIO_PORT					GPIOB
+#define LED1_GPIO_CLK					RCC_APB2Periph_GPIOB
 
-#define LED2_PIN						GPIO_Pin_5
+#define LED2_PIN						GPIO_Pin_1
+#define LED2_GPIO_PORT					GPIOB
+#define LED2_GPIO_CLK					RCC_APB2Periph_GPIOB
+#else
+#define LED1_PIN						GPIO_Pin_8
+#define LED1_GPIO_PORT					GPIOA
+#define LED1_GPIO_CLK					RCC_APB2Periph_GPIOA
+
+#define LED2_PIN						GPIO_Pin_12
 #define LED2_GPIO_PORT					GPIOC
 #define LED2_GPIO_CLK					RCC_APB2Periph_GPIOC
+#endif
 
 #if (WIZ550SR_ENABLE == 1)
 #define BOOT_PIN						GPIO_Pin_9
 #define BOOT_GPIO_PORT					GPIOB
 #define BOOT_GPIO_CLK					RCC_APB2Periph_GPIOB
 #else
-#define BOOT_PIN						GPIO_Pin_12
+#define BOOT_PIN						GPIO_Pin_8
 #define BOOT_GPIO_PORT					GPIOC
 #define BOOT_GPIO_CLK					RCC_APB2Periph_GPIOC
 #endif
@@ -38,5 +48,6 @@ void LED_Toggle(Led_TypeDef Led);
 uint8_t get_LED_Status(Led_TypeDef Led);
 void BOOT_Pin_Init();
 uint8_t get_bootpin_Status();
+void GPIO_Configuration(void);
 
 #endif

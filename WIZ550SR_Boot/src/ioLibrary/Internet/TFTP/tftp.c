@@ -19,7 +19,8 @@
 
 /* Extern Functions ---------------------------------------------*/
 #ifdef F_STORAGE
-extern void save_data(uint8_t *data, uint32_t data_len, uint16_t block_number);
+#include "flashHandler.h"
+//extern void save_data(uint8_t *data, uint32_t data_len, uint16_t block_number);
 #endif
 
 /* Global Variable ----------------------------------------------*/
@@ -30,6 +31,8 @@ static uint8_t g_filename[FILE_NAME_SIZE];
 static uint32_t g_server_ip = 0;
 static uint16_t g_server_port = 0;
 static uint16_t g_local_port = 0;
+volatile uint32_t g_server_ip_check = 0;
+volatile uint16_t g_server_port_check = 0;
 
 static uint32_t g_tftp_state = STATE_NONE;
 static uint16_t g_block_num = 0;
@@ -599,7 +602,8 @@ int TFTP_run(void)
 	if(g_resend_flag) {
 		if(tftp_time_cnt >= g_timeout) {
 			switch(get_tftp_state()) {
-			case STATE_WRQ:						// 미구??				break;
+			case STATE_WRQ:						// 미구?
+				break;
 
 			case STATE_RRQ:
 				send_tftp_rrq(g_filename, (uint8_t *)TRANS_BINARY, &default_tftp_opt, 1);
@@ -610,7 +614,8 @@ int TFTP_run(void)
 				send_tftp_ack(get_block_number());
 				break;
 
-			case STATE_ACK:						// 미구??				break;
+			case STATE_ACK:						// 미구?
+				break;
 
 			default:
 				break;
@@ -627,7 +632,8 @@ int TFTP_run(void)
 	}
 
 	/* Receive Packet Process */
-	len = recv_udp_packet(g_tftp_socket, g_tftp_rcv_buf, MAX_MTU_SIZE, &from_ip, &from_port);
+	//len = recv_udp_packet(g_tftp_socket, g_tftp_rcv_buf, MAX_MTU_SIZE, &from_ip, &from_port);
+	len = recv_udp_packet(g_tftp_socket, g_tftp_rcv_buf, MAX_MTU_SIZE, &g_server_ip_check, &g_server_port_check);
 	if(len < 0) {
 #ifdef __TFTP_DEBUG__
 		DBG_PRINT(ERROR_DBG, "[%s] recv_udp_packet error\r\n", __func__);
@@ -635,7 +641,8 @@ int TFTP_run(void)
 		return g_progress_state;
 	}
 
-	recv_tftp_packet(g_tftp_rcv_buf, len, from_ip, from_port);
+	//recv_tftp_packet(g_tftp_rcv_buf, len, from_ip, from_port);
+	recv_tftp_packet(g_tftp_rcv_buf, len, g_server_ip_check, g_server_port_check);
 
 	return g_progress_state;
 }

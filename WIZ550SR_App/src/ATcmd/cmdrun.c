@@ -15,7 +15,7 @@
 #include "cmdrun.h"
 #include "ConfigData.h"
 #include "flashHandler.h"
-#include "DNS/dns.h"
+#include "dns.h"
 #include "uartHandler.h"
 #include "timerHandler.h"
 

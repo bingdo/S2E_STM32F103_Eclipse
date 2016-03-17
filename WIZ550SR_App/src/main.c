@@ -19,8 +19,8 @@
 #include "ConfigData.h"
 #include "ConfigMessage.h"
 #include "atcmd.h"
-#include "DHCP/dhcp.h"
-#include "DNS/dns.h"
+#include "dhcp.h"
+#include "dns.h"
 #include "S2E.h"
 #include "dhcp_cb.h"
 #include "i2cHandler.h"
@@ -36,6 +36,11 @@
 // changing the definitions required in system/src/diag/trace_impl.c
 // (currently OS_USE_TRACE_ITM, OS_USE_TRACE_SEMIHOSTING_DEBUG/_STDOUT).
 //
+
+///////////////////////////////////////
+// Debugging Message Printout enable //
+///////////////////////////////////////
+#define _MAIN_DEBUG_
 
 /*****************************************************************************
  * Public types/enumerations/variables
@@ -59,16 +64,15 @@ int main(int argc, char* argv[])
 	uint8_t dns_server_ip[4];
 
 	RCC_Configuration();
+	//GPIO_Configuration();
 	NVIC_SetVectorTable(NVIC_VectTab_FLASH, 0x7000);
 	//__enable_irq();
 	
-#if (WIZ550SR_ENABLE == 0)
 	LED_Init(LED1);
 	LED_Init(LED2);
 	
 	LED_On(LED1);
 	LED_Off(LED2);
-#endif
 
 #if (WIZ550SR_ENABLE == 1)
 	STAT_Init();
@@ -77,6 +81,7 @@ int main(int argc, char* argv[])
 
 	//BOOT_Pin_Init();
 	//Board_factory_Init();
+	//GPIO_PinRemapConfig (GPIO_Remap_SWJ_Disable, ENABLE);
 
 	/* Initialize the I2C EEPROM driver ----------------------------------------*/
 #if defined(EEPROM_ENABLE)
@@ -104,6 +109,16 @@ int main(int argc, char* argv[])
 	Mac_Conf();
 	DHCP_init(SOCK_DHCP, g_send_buf);
 	reg_dhcp_cbfunc(w5500_dhcp_assign, w5500_dhcp_assign, w5500_dhcp_conflict);
+
+#ifdef _MAIN_DEBUG_
+    printf("\r\n=======================================\r\n");
+	printf(" WIZnet WIZ550SR Revision 1.0\r\n");
+	printf(" Embedded Serial to Ethernet Module\r\n");
+	printf(" Firmware Version %d.%d.%d\r\n", MAJOR_VER, MINOR_VER, MAINTENANCE_VER);
+	printf("=======================================\r\n");
+
+	printf(" # Device Name : %s\r\n\r\n", value->module_name);
+#endif
 
 	/* Initialize Network Information */
 	if(value->options.dhcp_use) {		// DHCP
@@ -162,7 +177,11 @@ int main(int argc, char* argv[])
 			s2e_run(SOCK_DATA);
 		}
 
+#if defined(WIZ1x0SR_CFGTOOL)
+		do_udp_configex(SOCK_CONFIGEX);
+#else
 		do_udp_config(SOCK_CONFIG);
+#endif
 
 		if(value->options.dhcp_use)
 			DHCP_run();

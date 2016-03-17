@@ -93,7 +93,10 @@ void load_S2E_Packet_from_storage()
 		write_storage(1, &s2e_packet, sizeof(S2E_Packet));
 	}
 
-	s2e_packet.fw_ver[0] = MAJOR_VER;
+#if defined(WIZ1x0SR_CFGTOOL)
+	if(s2e_packet.fw_ver[0] != 82)
+#endif
+		s2e_packet.fw_ver[0] = MAJOR_VER;
 	s2e_packet.fw_ver[1] = MINOR_VER;
 	s2e_packet.fw_ver[2] = MAINTENANCE_VER;
 }
@@ -144,11 +147,11 @@ void display_Net_Info()
 	wiz_NetInfo gWIZNETINFO;
 
 	ctlnetwork(CN_GET_NETINFO, (void*) &gWIZNETINFO);
-	printf("MAC: %02X:%02X:%02X:%02X:%02X:%02X\r\n", gWIZNETINFO.mac[0], gWIZNETINFO.mac[1], gWIZNETINFO.mac[2], gWIZNETINFO.mac[3], gWIZNETINFO.mac[4], gWIZNETINFO.mac[5]);
-	printf("IP: %d.%d.%d.%d\r\n", gWIZNETINFO.ip[0], gWIZNETINFO.ip[1], gWIZNETINFO.ip[2], gWIZNETINFO.ip[3]);
-	printf("GW: %d.%d.%d.%d\r\n", gWIZNETINFO.gw[0], gWIZNETINFO.gw[1], gWIZNETINFO.gw[2], gWIZNETINFO.gw[3]);
-	printf("SN: %d.%d.%d.%d\r\n", gWIZNETINFO.sn[0], gWIZNETINFO.sn[1], gWIZNETINFO.sn[2], gWIZNETINFO.sn[3]);
-	printf("DNS: %d.%d.%d.%d\r\n", gWIZNETINFO.dns[0], gWIZNETINFO.dns[1], gWIZNETINFO.dns[2], gWIZNETINFO.dns[3]);
+	printf("[BOOT] MAC: %02X:%02X:%02X:%02X:%02X:%02X\r\n", gWIZNETINFO.mac[0], gWIZNETINFO.mac[1], gWIZNETINFO.mac[2], gWIZNETINFO.mac[3], gWIZNETINFO.mac[4], gWIZNETINFO.mac[5]);
+	printf("[BOOT] IP: %d.%d.%d.%d\r\n", gWIZNETINFO.ip[0], gWIZNETINFO.ip[1], gWIZNETINFO.ip[2], gWIZNETINFO.ip[3]);
+	printf("[BOOT] GW: %d.%d.%d.%d\r\n", gWIZNETINFO.gw[0], gWIZNETINFO.gw[1], gWIZNETINFO.gw[2], gWIZNETINFO.gw[3]);
+	printf("[BOOT] SN: %d.%d.%d.%d\r\n", gWIZNETINFO.sn[0], gWIZNETINFO.sn[1], gWIZNETINFO.sn[2], gWIZNETINFO.sn[3]);
+	printf("[BOOT] DNS: %d.%d.%d.%d\r\n", gWIZNETINFO.dns[0], gWIZNETINFO.dns[1], gWIZNETINFO.dns[2], gWIZNETINFO.dns[3]);
 }
 
 void Mac_Conf()
@@ -175,7 +178,7 @@ void Net_Conf()
 
 	ctlnetwork(CN_SET_NETINFO, (void*) &gWIZNETINFO);
 
-	//display_Net_Info();
+	display_Net_Info();
 }
 
 void set_dhcp_mode()
