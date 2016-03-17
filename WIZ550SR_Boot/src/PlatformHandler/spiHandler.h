@@ -27,6 +27,8 @@
 #define W5500_DUMMY_BYTE				0xFF
 #define W5500_RESET_PIN                 GPIO_Pin_4
 #define W5500_RESET_PORT                GPIOC
+#define INT_W5500_PIN					GPIO_Pin_5	//in
+#define INT_W5500_PORT					GPIOC
 #else
 #define W5500_SPI                       SPI2
 #define W5500_SPI_CLK                   RCC_APB1Periph_SPI2
@@ -48,8 +50,10 @@
 #define W5500_CS_GPIO_CLK               RCC_APB2Periph_GPIOB
 
 #define W5500_DUMMY_BYTE				0xFF
-#define W5500_RESET_PIN                 GPIO_Pin_9
+#define W5500_RESET_PIN                 GPIO_Pin_0
 #define W5500_RESET_PORT                GPIOB
+#define INT_W5500_PIN					GPIO_Pin_1	//in
+#define INT_W5500_PORT					GPIOB
 #endif
 
 void W5500_SPI_Init(void);

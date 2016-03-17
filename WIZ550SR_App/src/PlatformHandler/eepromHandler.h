@@ -4,7 +4,7 @@
 
 #include "common.h"
 
-//#define EEPROM_ENABLE
+#define EEPROM_ENABLE
 #if defined(EEPROM_ENABLE)
 	#define EEPROM_ENABLE_BYI2CPERI
 	#if !defined(EEPROM_ENABLE_BYI2CPERI)
@@ -22,7 +22,11 @@
 #define EE24AA128 16384
 #define EE24AA256 32768
 
+#if (WIZ550SR_ENABLE == 1)
 #define EE_TYPE  EE24AA16
+#else
+#define EE_TYPE  EE24AA64
+#endif
 
 #if (EE_TYPE > EE24AA16)
 #define EEPROM_BLOCK_SIZE       	256

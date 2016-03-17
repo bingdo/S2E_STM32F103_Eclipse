@@ -4,10 +4,10 @@
 
 #include "common.h"
 
-#define MULTIFLASH_ENABLE
+//#define MULTIFLASH_ENABLE
 
 #define FLASH_PAGE0_BASE	0x08000000
-#define FLASH_CONFIG_PAGE	0//3
+#define FLASH_CONFIG_PAGE	2//3
 #if !defined(MULTIFLASH_ENABLE)
 //#define FLASH_PAGE_SIZE		0x400
 //#define FLASH_PAGE			128

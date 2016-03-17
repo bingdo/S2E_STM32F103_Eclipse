@@ -9,37 +9,51 @@ void Delay(volatile unsigned int nCount)
 	for(; nCount!= 0;nCount--);
 }
 
-static uint8_t wizchip_rw(uint8_t byte)
+uint8_t wizchip_rw(uint8_t byte)
 {
-	/*!< Loop while DR register in not emplty */
-	while (SPI_I2S_GetFlagStatus(W5500_SPI, SPI_I2S_FLAG_TXE) == RESET);
+	int retry = 0;
 
-	/*!< Send byte through the SPI2 peripheral */
+	/*!< Loop while DR register in not emplty */
+	while (SPI_I2S_GetFlagStatus(W5500_SPI, SPI_I2S_FLAG_TXE) == RESET)
+	{
+		retry++;
+		if(retry>400)
+			return 0;
+	}
+
+	/*!< Send byte through the SPI1, SPI2 peripheral */
 	SPI_I2S_SendData(W5500_SPI, byte);
 
+	retry = 0;
+
 	/*!< Wait to receive a byte */
-	while (SPI_I2S_GetFlagStatus(W5500_SPI, SPI_I2S_FLAG_RXNE) == RESET);
+	while (SPI_I2S_GetFlagStatus(W5500_SPI, SPI_I2S_FLAG_RXNE) == RESET)
+	{
+		retry++;
+		if(retry>400)
+			return 0;
+	}
 
 	/*!< Return the byte read from the SPI bus */
 	return SPI_I2S_ReceiveData(W5500_SPI);
 }
 
-static void  wizchip_select(void)
+void  wizchip_select(void)
 {
 	GPIO_ResetBits(W5500_CS_GPIO_PORT, W5500_CS_PIN);
 }
 
-static void  wizchip_deselect(void)
+void  wizchip_deselect(void)
 {
 	GPIO_SetBits(W5500_CS_GPIO_PORT, W5500_CS_PIN);
 }
 
-static void  wizchip_write(uint8_t wb)
+void  wizchip_write(uint8_t wb)
 {
 	wizchip_rw(wb);
 }
 
-static uint8_t wizchip_read(void)
+uint8_t wizchip_read(void)
 {
 	return wizchip_rw(0xFF);
 }
@@ -50,11 +64,12 @@ void W5500_SPI_Init(void)
 	SPI_InitTypeDef  SPI_InitStructure;
 
 	/*!< Configure W5500_SPI pins: SCK */
-	GPIO_InitStructure.GPIO_Pin = W5500_SPI_SCK_PIN;
+	GPIO_InitStructure.GPIO_Pin = W5500_SPI_SCK_PIN | W5500_SPI_MISO_PIN | W5500_SPI_MOSI_PIN;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
 	GPIO_Init(W5500_SPI_SCK_GPIO_PORT, &GPIO_InitStructure);
 
+#if 0
 	/*!< Configure W5500_SPI pins: MOSI */
 	GPIO_InitStructure.GPIO_Pin = W5500_SPI_MOSI_PIN;
 	GPIO_Init(W5500_SPI_MOSI_GPIO_PORT, &GPIO_InitStructure);
@@ -63,6 +78,7 @@ void W5500_SPI_Init(void)
 	GPIO_InitStructure.GPIO_Pin = W5500_SPI_MISO_PIN;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
 	GPIO_Init(W5500_SPI_MISO_GPIO_PORT, &GPIO_InitStructure);
+#endif
 
 	/*!< Configure W5500_CS_PIN pin: W5500 CS pin */
 	GPIO_InitStructure.GPIO_Pin = W5500_CS_PIN;
@@ -89,6 +105,7 @@ void W5500_SPI_Init(void)
 
 void W5500_Init(void)
 {
+	uint8_t tmp;
 	uint8_t memsize[2][8] = { {2,2,2,2,2,2,2,2},{2,2,2,2,2,2,2,2}};
 
 	wizchip_deselect();
@@ -107,6 +124,15 @@ void W5500_Init(void)
 		printf("WIZCHIP Initialized fail.\r\n");
 		return;
 	}
+
+	/* PHY link status check */
+	do {
+	    if(ctlwizchip(CW_GET_PHYLINK, (void*)&tmp) == -1) {
+	    	;
+	    	//printf("Unknown PHY Link status.\r\n");
+	    	//return 0;
+	    }
+	} while (tmp == PHY_LINK_OFF);
 
 	//Delay(10000);
 }

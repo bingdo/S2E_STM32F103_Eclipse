@@ -1,6 +1,6 @@
 
 #include <stdint.h>
-#include "DHCP/dhcp.h"
+#include "dhcp.h"
 #include "ConfigData.h"
 
 void w5500_dhcp_assign()
