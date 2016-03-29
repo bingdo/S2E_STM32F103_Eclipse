@@ -100,7 +100,9 @@ int main(int argc, char* argv[])
 	load_S2E_Packet_from_storage();
 
 	USART1_Configuration();
+#if !defined(CHINA_BOARD)
 	USART2_Configuration();
+#endif
 
 	W5500_SPI_Init();
 	W5500_Init();
