@@ -50,10 +50,17 @@
 #define W5500_CS_GPIO_CLK               RCC_APB2Periph_GPIOB
 
 #define W5500_DUMMY_BYTE				0xFF
+#if !defined(CHINA_BOARD)
 #define W5500_RESET_PIN                 GPIO_Pin_0
 #define W5500_RESET_PORT                GPIOB
 #define INT_W5500_PIN					GPIO_Pin_1	//in
 #define INT_W5500_PORT					GPIOB
+#else
+#define W5500_RESET_PIN                 GPIO_Pin_9
+#define W5500_RESET_PORT                GPIOB
+#define INT_W5500_PIN					GPIO_Pin_0	//in
+#define INT_W5500_PORT					GPIOB
+#endif
 #endif
 
 void W5500_SPI_Init(void);

@@ -25,7 +25,11 @@
 #if (WIZ550SR_ENABLE == 1)
 #define EE_TYPE  EE24AA16
 #else
+#if !defined(CHINA_BOARD)
 #define EE_TYPE  EE24AA64
+#else
+#define EE_TYPE  EE24AA16
+#endif
 #endif
 
 #if (EE_TYPE > EE24AA16)
