@@ -18,5 +18,6 @@
 
 #define WIZ550SR_ENABLE	1
 //#define WIZ1x0SR_CFGTOOL
+//#define CHINA_BOARD
 
 #endif
