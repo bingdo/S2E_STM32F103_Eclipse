@@ -67,7 +67,7 @@ int main(int argc, char* argv[])
 	//GPIO_Configuration();
 	NVIC_SetVectorTable(NVIC_VectTab_FLASH, 0x7000);
 	//__enable_irq();
-	
+
 	LED_Init(LED1);
 	LED_Init(LED2);
 	
