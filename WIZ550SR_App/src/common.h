@@ -21,7 +21,7 @@
 #define APP_BASE		0x08007000			// Boot Size 28K
 #define WORK_BUF_SIZE	2048
 
-#define WIZ550SR_ENABLE	1
+#define WIZ550SR_ENABLE	0
 //#define WIZ1x0SR_CFGTOOL
 //#define CHINA_BOARD
 

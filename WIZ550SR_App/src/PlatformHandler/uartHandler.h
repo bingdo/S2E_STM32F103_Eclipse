@@ -17,8 +17,10 @@
 #include "ConfigData.h"
 
 #define UART_DEBUG USART1
-#define UART_DATA USART1
-#define USART2_ENABLE	0
+#define UART_DATA USART2
+#define USART2_ENABLE	1
+
+#define DATA7BIT_ENABLE 0
 
 #define USART1_TX		GPIO_Pin_9	// out
 #define USART1_RX		GPIO_Pin_10	// in
@@ -51,6 +53,11 @@ int UART_read_blk(void *data, int bytes);
 void UART_buffer_flush(RINGBUFF_T *buf);
 void myprintf(char *fmt, ...);
 void serial_info_init(USART_TypeDef *pUART, struct __serial_info *serial);
+
+#if (DATA7BIT_ENABLE == 1)
+extern uint8_t g_data_7bit_flag;
+extern uint8_t g_data_7bit_none_flag;
+#endif
 
 #endif
 

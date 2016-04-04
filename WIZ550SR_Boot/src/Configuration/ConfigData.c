@@ -178,7 +178,7 @@ void Net_Conf()
 
 	ctlnetwork(CN_SET_NETINFO, (void*) &gWIZNETINFO);
 
-	display_Net_Info();
+	//display_Net_Info();
 }
 
 void set_dhcp_mode()

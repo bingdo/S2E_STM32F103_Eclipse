@@ -17,8 +17,8 @@
 #include "ConfigData.h"
 
 #define UART_DEBUG USART1
-#define UART_DATA USART1
-#define USART2_ENABLE	0
+#define UART_DATA USART2
+#define USART2_ENABLE	1
 
 #define USART1_TX		GPIO_Pin_9	// out
 #define USART1_RX		GPIO_Pin_10	// in

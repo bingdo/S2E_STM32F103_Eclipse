@@ -143,10 +143,12 @@ void atc_init()
  */
 void atc_run(void)
 {
-	int8_t ret, recv_char;
+	int8_t ret;
+	uint8_t recv_char;
 	static uint8_t buflen = 0;
 
-	if(UART_read(&recv_char, 1) <= 0) return; // ?�력 �??�는 경우		printf("RECV: 0x%x\r\n", recv_char);
+	if(UART_read(&recv_char, 1) <= 0) return; // ?�력 �??�는 경우
+	//printf("RECV: 0x%x\r\n", recv_char);
 
 	if(atci.sendsock != VAL_NONE)
 	{

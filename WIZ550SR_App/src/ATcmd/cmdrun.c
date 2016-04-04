@@ -868,12 +868,10 @@ void act_uart_q(int8_t num)
 
 void act_uart_a(struct __serial_info *serial)
 {
-	USART_InitTypeDef USART_InitStructure;
-
 	cmd_resp(RET_OK, VAL_NONE);
 	while(RingBuffer_GetCount(&txring) != 0);
 	delay_cnt(999999);
-	serial_info_init(&USART_InitStructure, serial);
+	serial_info_init(UART_DATA, serial);
 }
 
 void act_mdata(void)
