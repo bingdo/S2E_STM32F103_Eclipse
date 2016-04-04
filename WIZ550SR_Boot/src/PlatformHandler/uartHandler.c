@@ -374,20 +374,6 @@ void serial_info_init(USART_TypeDef *pUART, struct __serial_info *serial)
 	if(!valid_arg)
 		USART_InitStructure.USART_BaudRate = baud_115200;
 
-	/* Set Data Bits */
-	switch(serial->data_bits) {
-		case word_len8:
-			USART_InitStructure.USART_WordLength = USART_WordLength_8b;
-			break;
-		case word_len9:
-			USART_InitStructure.USART_WordLength = USART_WordLength_9b;
-			break;
-		default:
-			USART_InitStructure.USART_WordLength = USART_WordLength_8b;
-			serial->data_bits = word_len8;
-			break;
-	}
-
 	/* Set Stop Bits */
 	switch(serial->stop_bits) {
 		case stop_bit1:
@@ -430,6 +416,12 @@ void serial_info_init(USART_TypeDef *pUART, struct __serial_info *serial)
 	default:
 		USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
 		break;
+	}
+
+	USART_InitStructure.USART_WordLength = USART_WordLength_8b;
+	if (serial->data_bits == word_len8 && serial->parity != parity_none)
+	{
+		USART_InitStructure.USART_WordLength = USART_WordLength_9b;
 	}
 
 	/* Configure the USARTx */

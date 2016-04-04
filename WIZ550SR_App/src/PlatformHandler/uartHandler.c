@@ -61,6 +61,11 @@ ssize_t _write (int fd __attribute__((unused)), const char* buf __attribute__((u
     return nbyte;
 }
 
+#if (DATA7BIT_ENABLE == 1)
+uint8_t g_data_7bit_flag;
+uint8_t g_data_7bit_none_flag;
+#endif
+
 RINGBUFF_T txring, rxring;
 static uint8_t rxbuff[UART_RRB_SIZE], txbuff[UART_SRB_SIZE];
 
@@ -141,7 +146,16 @@ void Chip_UART_IRQRBHandler(USART_TypeDef *pUART, RINGBUFF_T *pRXRB, RINGBUFF_T 
 #if defined(RS485_ENABLE)
 			RS485_TX_ENABLE();
 #endif
+#if (DATA7BIT_ENABLE == 1)
+			//if(pUART == USART2 && g_data_7bit_none_flag == 1)
+			//	USART_SendData(pUART, (ch|0x80));
+			//else
+				USART_SendData(pUART, ch);
+			//if (pUART == USART2)
+			//	printf("T0x%x %d\r\n", ch, g_data_7bit_flag);
+#else
 			USART_SendData(pUART, ch);
+#endif
 		}
 		else												// RingBuffer Empty
 		{
@@ -157,7 +171,17 @@ void Chip_UART_IRQRBHandler(USART_TypeDef *pUART, RINGBUFF_T *pRXRB, RINGBUFF_T 
 		if(RingBuffer_IsFull(pRXRB)) {
 			// Buffer Overflow
 		} else {
-			ch = USART_ReceiveData(pUART);
+
+#if (DATA7BIT_ENABLE == 1)
+			if(pUART == USART2 && g_data_7bit_flag == 1)
+				ch = (uint8_t)(USART_ReceiveData(pUART) & 0x7F);
+			else
+				ch = (uint8_t)USART_ReceiveData(pUART);
+			//if (pUART == USART2)
+			//	printf("R0x%x %d\r\n", ch, g_data_7bit_flag);
+#else
+			ch = (uint8_t)USART_ReceiveData(pUART);
+#endif
 			RingBuffer_Insert(pRXRB, &ch);
 		}
 	}
@@ -414,20 +438,6 @@ void serial_info_init(USART_TypeDef *pUART, struct __serial_info *serial)
 	if(!valid_arg)
 		USART_InitStructure.USART_BaudRate = baud_115200;
 
-	/* Set Data Bits */
-	switch(serial->data_bits) {
-		case word_len8:
-			USART_InitStructure.USART_WordLength = USART_WordLength_8b;
-			break;
-		case word_len9:
-			USART_InitStructure.USART_WordLength = USART_WordLength_9b;
-			break;
-		default:
-			USART_InitStructure.USART_WordLength = USART_WordLength_8b;
-			serial->data_bits = word_len8;
-			break;
-	}
-
 	/* Set Stop Bits */
 	switch(serial->stop_bits) {
 		case stop_bit1:
@@ -471,6 +481,35 @@ void serial_info_init(USART_TypeDef *pUART, struct __serial_info *serial)
 		USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
 		break;
 	}
+
+	USART_InitStructure.USART_WordLength = USART_WordLength_8b;
+	if (serial->data_bits == word_len8 && serial->parity != parity_none)
+	{
+		USART_InitStructure.USART_WordLength = USART_WordLength_9b;
+	}
+
+#if (DATA7BIT_ENABLE == 1)
+	if (serial->data_bits == word_len7)
+	{
+		g_data_7bit_flag = 1;
+		USART_InitStructure.USART_Parity = USART_Parity_No;
+		//if (serial->parity == parity_none)
+		//{
+		//	USART_InitStructure.USART_WordLength = USART_WordLength_9b;
+		//	g_data_7bit_none_flag = 1;
+		//}
+		//else
+		//{
+		//	g_data_7bit_none_flag = 0;
+		//}
+	}
+	else
+	{
+		g_data_7bit_flag = 0;
+		//g_data_7bit_none_flag = 0;
+	}
+	//printf("7:%d %d", serial->data_bits, g_data_7bit_flag);
+#endif
 
 	/* Configure the USARTx */
 	USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
