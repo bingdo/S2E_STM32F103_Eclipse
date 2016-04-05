@@ -66,7 +66,6 @@ RINGBUFF_T txring, rxring;
 static uint8_t rxbuff[UART_RRB_SIZE], txbuff[UART_SRB_SIZE];
 
 uint32_t baud_table[11] = {
-	300,
 	600,
 	1200,
 	2400,
