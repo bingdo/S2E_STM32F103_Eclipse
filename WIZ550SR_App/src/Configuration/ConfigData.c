@@ -22,7 +22,7 @@ S2E_Packet* get_S2E_Packet_pointer()
 void set_S2E_Packet_to_factory_value()
 {
 	s2e_packet.packet_size = sizeof(S2E_Packet);	// 133
-	s2e_packet.module_type[0] = 0x00;
+	s2e_packet.module_type[0] = 0x02;
 	s2e_packet.module_type[1] = 0x00;
 	s2e_packet.module_type[2] = 0x00;
 	memcpy(s2e_packet.module_name, "WIZ550SR\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 25);
@@ -32,11 +32,11 @@ void set_S2E_Packet_to_factory_value()
 
 	s2e_packet.network_info_common.local_ip[0] = 192;
 	s2e_packet.network_info_common.local_ip[1] = 168;
-	s2e_packet.network_info_common.local_ip[2] = 11;
+	s2e_packet.network_info_common.local_ip[2] = 77;
 	s2e_packet.network_info_common.local_ip[3] = 100;
 	s2e_packet.network_info_common.gateway[0] = 192;
 	s2e_packet.network_info_common.gateway[1] = 168;
-	s2e_packet.network_info_common.gateway[2] = 11;
+	s2e_packet.network_info_common.gateway[2] = 77;
 	s2e_packet.network_info_common.gateway[3] = 1;
 	s2e_packet.network_info_common.subnet[0] = 255;
 	s2e_packet.network_info_common.subnet[1] = 255;
@@ -47,7 +47,7 @@ void set_S2E_Packet_to_factory_value()
 	s2e_packet.network_info[0].state = 0;
 	s2e_packet.network_info[0].remote_ip[0] = 192;
 	s2e_packet.network_info[0].remote_ip[1] = 168;
-	s2e_packet.network_info[0].remote_ip[2] = 11;
+	s2e_packet.network_info[0].remote_ip[2] = 77;
 	s2e_packet.network_info[0].remote_ip[3] = 101;
 	s2e_packet.network_info[0].local_port = 5000;
 	s2e_packet.network_info[0].remote_port = 5000;
